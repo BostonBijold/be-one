@@ -22,7 +22,7 @@ interface Props {
   onEssayChange: (essay: string) => void;
 }
 
-export default function VirtueSheet({ virtue, isAdmin, thisWeekOrder, onClose, onEssayChange }: Props) {
+export default function VirtueSheet({ virtue, isAdmin, onClose, onEssayChange }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(virtue.essay);
   const [saving, setSaving] = useState(false);

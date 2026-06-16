@@ -6,7 +6,7 @@ import RoutineItem from "@/models/RoutineItem";
 import RoutineLog from "@/models/RoutineLog";
 import VirtueModel from "@/models/Virtue";
 import { seedDefaultRoutines, ensureAfternoonGroup, ensureHabitsGroup, ensureVirtueCheckInItems } from "@/lib/seed";
-import { ensureVirtues, currentVirtueOrder } from "@/lib/seed-virtues";
+import { currentVirtueOrder } from "@/lib/seed-virtues";
 import RoutinesView from "@/components/RoutinesView";
 
 const ADMIN_EMAIL = "bostonrbijold@gmail.com";
@@ -37,7 +37,6 @@ export default async function RoutinesPage({
   if (!userId) redirect("/login");
 
   const userName = session?.user?.name ?? "Developer";
-  const userImage = session?.user?.image ?? null;
 
   await connectDB();
 
@@ -61,8 +60,6 @@ export default async function RoutinesPage({
     { userId, name: "Afternoon Routine", startTime: { $in: [null, undefined] } },
     { $set: { startTime: "12:00", collapseAfter: "17:00" } }
   );
-
-  await ensureVirtues();
 
   // Current virtue
   const virtueOrder = currentVirtueOrder(new Date());
@@ -146,7 +143,6 @@ export default async function RoutinesPage({
       weekDates={weekDates}
       today={today}
       userName={userName}
-      userImage={userImage}
       skipAuth={skipAuth}
       currentVirtue={currentVirtue}
       isAdmin={isAdmin}

@@ -14,7 +14,6 @@ export default async function GoalsPage() {
   return (
     <GoalsView
       userName={session?.user?.name ?? "Developer"}
-      userImage={session?.user?.image ?? null}
       today={today}
       skipAuth={skipAuth}
     />

@@ -11,12 +11,11 @@ const MONTHS = [
 
 interface Props {
   userName: string;
-  userImage: string | null;
   today: string;
   skipAuth?: boolean;
 }
 
-export default function Header({ userName, userImage, today, skipAuth }: Props) {
+export default function Header({ userName, today, skipAuth }: Props) {
   const date = new Date(today + "T12:00:00");
   const dayName = DAYS[date.getDay()];
   const monthName = MONTHS[date.getMonth()];
@@ -63,11 +62,7 @@ export default function Header({ userName, userImage, today, skipAuth }: Props) 
               className="relative w-8 h-8 rounded-full overflow-hidden border border-border-light flex items-center justify-center bg-card hover:border-muted transition-colors"
               title="Profile"
             >
-              {userImage ? (
-                <Image src={userImage} alt={userName} fill className="object-cover" />
-              ) : (
-                <span className="text-muted text-xs font-mono">{userName[0]?.toUpperCase()}</span>
-              )}
+              <span className="text-muted text-xs font-mono">{userName[0]?.toUpperCase()}</span>
             </Link>
           )}
         </div>

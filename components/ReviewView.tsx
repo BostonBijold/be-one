@@ -40,7 +40,6 @@ interface CurrentVirtue {
 
 interface Props {
   userName: string;
-  userImage: string | null;
   today: string;
   skipAuth: boolean;
   currentVirtue: CurrentVirtue | null;
@@ -60,7 +59,7 @@ function fmtDateRange(dates: string[]) {
 }
 
 export default function ReviewView({
-  userName, userImage, today, skipAuth,
+  userName, today, skipAuth,
   currentVirtue, checkinItemId, weeklyReviewItemId,
   initialMode, initialDate, returnTo, hasCheckedInToday,
 }: Props) {
@@ -133,7 +132,7 @@ export default function ReviewView({
       )}
 
       <div className="mx-auto max-w-mobile px-4 pb-28">
-        <Header userName={userName} userImage={userImage} today={today} skipAuth={skipAuth} />
+        <Header userName={userName} today={today} skipAuth={skipAuth} />
 
         {/* This week's virtue — same focus banner as Routines */}
         {currentVirtue && (

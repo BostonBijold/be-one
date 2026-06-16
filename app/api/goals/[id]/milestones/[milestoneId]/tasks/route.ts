@@ -56,6 +56,7 @@ export async function POST(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deriveComplete(milestone: any) {
   if (milestone.tasks.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allDone = milestone.tasks.every((t: any) => t.done);
     milestone.complete = allDone;
     milestone.completedAt = allDone ? new Date() : null;

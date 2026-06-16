@@ -26,7 +26,6 @@ export interface SerializedGoal {
 
 interface Props {
   userName: string;
-  userImage: string | null;
   today: string;
   skipAuth?: boolean;
 }
@@ -291,7 +290,7 @@ function AddGoalSheet({
 
 // ── Main View ─────────────────────────────────────────────────────────────────
 
-export default function GoalsView({ userName, userImage, today, skipAuth }: Props) {
+export default function GoalsView({ userName, today, skipAuth }: Props) {
   const router = useRouter();
   const [goals, setGoals] = useState<SerializedGoal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -318,7 +317,7 @@ export default function GoalsView({ userName, userImage, today, skipAuth }: Prop
   return (
     <div className="min-h-screen bg-bg">
       <div className="mx-auto max-w-mobile px-4 pb-24">
-        <Header userName={userName} userImage={userImage} today={today} skipAuth={skipAuth} />
+        <Header userName={userName} today={today} skipAuth={skipAuth} />
 
         {/* Title */}
         <div className="flex items-center justify-between mb-8">
