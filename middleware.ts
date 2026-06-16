@@ -16,6 +16,8 @@ export default auth((req) => {
   const isApiRoute = pathname.startsWith("/api");
   const isPublicPage = PUBLIC_PAGE_PATHS.has(pathname);
 
+  console.log(`[middleware] ${pathname} — isLoggedIn:${isLoggedIn} isPublicPage:${isPublicPage} isApiRoute:${isApiRoute} token:`, JSON.stringify(req.auth));
+
   if (isLoggedIn && isPublicPage) {
     return Response.redirect(new URL("/routines", req.nextUrl.origin));
   }

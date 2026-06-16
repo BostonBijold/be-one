@@ -6,6 +6,7 @@ import Google from "next-auth/providers/google";
 // route handlers and server components, which run in the Node runtime.
 export default {
   providers: [Google],
+  session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
   },
