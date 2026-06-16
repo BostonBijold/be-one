@@ -1,42 +1,30 @@
 "use client";
 
 import { signOut } from "next-auth/react";
-import Image from "next/image";
 import Header from "@/components/Header";
 
 interface Props {
   name: string;
   email: string;
-  image: string | null;
   today: string;
   skipAuth: boolean;
 }
 
-export default function ProfileView({ name, email, image, today, skipAuth }: Props) {
+export default function ProfileView({ name, email, today, skipAuth }: Props) {
   return (
     <div className="min-h-screen bg-bg">
       <div className="mx-auto max-w-mobile px-4 pb-28">
-        <Header userName={name} userImage={image} today={today} skipAuth={skipAuth} />
+        <Header userName={name} today={today} skipAuth={skipAuth} />
 
         <div className="mt-4 space-y-4">
           {/* Identity card */}
           <div className="bg-card rounded-card border border-border p-5">
             <div className="flex items-center gap-4">
-              {image ? (
-                <Image
-                  src={image}
-                  alt={name}
-                  width={56}
-                  height={56}
-                  className="rounded-full flex-shrink-0"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-olive/20 flex items-center justify-center flex-shrink-0">
-                  <span className="font-mono text-olive text-xl font-bold">
-                    {name[0]?.toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <div className="w-14 h-14 rounded-full bg-olive/20 flex items-center justify-center flex-shrink-0">
+                <span className="font-mono text-olive text-xl font-bold">
+                  {name[0]?.toUpperCase()}
+                </span>
+              </div>
               <div className="min-w-0">
                 <p className="font-heading text-lg text-text truncate">{name}</p>
                 <p className="font-mono text-dim text-xs mt-0.5 truncate">{email}</p>

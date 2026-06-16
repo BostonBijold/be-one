@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, IBM_Plex_Mono, Inter } from "next/font/google";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -24,12 +25,27 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "A Good Man",
   description: "Build your routines, build yourself.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "A Good Man",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#18160f",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -38,7 +54,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${playfair.variable} ${ibmMono.variable} ${inter.variable}`}
     >
-      <body className="min-h-screen bg-bg text-text font-body">{children}</body>
+      <body className="min-h-screen bg-bg text-text font-body">
+        {children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }

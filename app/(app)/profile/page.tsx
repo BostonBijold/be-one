@@ -15,7 +15,6 @@ export default async function ProfilePage() {
     <ProfileView
       name={session?.user?.name ?? "Developer"}
       email={session?.user?.email ?? "dev@local"}
-      image={session?.user?.image ?? null}
       today={today}
       skipAuth={skipAuth ?? false}
     />

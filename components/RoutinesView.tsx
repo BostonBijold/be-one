@@ -34,7 +34,6 @@ interface Props {
   weekDates: string[];
   today: string;
   userName: string;
-  userImage: string | null;
   skipAuth?: boolean;
   currentVirtue?: VirtueData | null;
   isAdmin?: boolean;
@@ -48,7 +47,7 @@ interface ActiveSession {
 
 export default function RoutinesView({
   groups, initialLogs, weekLogs, weekDates,
-  today, userName, userImage, skipAuth,
+  today, userName, skipAuth,
   currentVirtue: initialVirtue = null,
   isAdmin = false,
   autoStartNext = false,
@@ -275,7 +274,7 @@ export default function RoutinesView({
       )}
 
       <div className="mx-auto max-w-mobile px-4 pb-28">
-        <Header userName={userName} userImage={userImage} today={today} skipAuth={skipAuth} />
+        <Header userName={userName} today={today} skipAuth={skipAuth} />
 
         {/* Virtue strip */}
         {virtue && (

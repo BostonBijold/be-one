@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongoose";
 import RoutineItem from "@/models/RoutineItem";
 import VirtueModel from "@/models/Virtue";
 import VirtueCheckIn from "@/models/VirtueCheckIn";
-import { ensureVirtues, currentVirtueOrder } from "@/lib/seed-virtues";
+import { currentVirtueOrder } from "@/lib/seed-virtues";
 import ReviewView from "@/components/ReviewView";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,6 @@ export default async function ReviewPage({
   const today = new Date().toISOString().split("T")[0];
 
   await connectDB();
-  await ensureVirtues();
 
   const virtueOrder = currentVirtueOrder(new Date());
   const virtueDoc = await VirtueModel.findOne({ order: virtueOrder, isActive: true }).lean();
@@ -53,7 +52,6 @@ export default async function ReviewPage({
   return (
     <ReviewView
       userName={session?.user?.name ?? "Developer"}
-      userImage={session?.user?.image ?? null}
       today={today}
       skipAuth={skipAuth ?? false}
       currentVirtue={currentVirtue}
