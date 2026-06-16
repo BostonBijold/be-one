@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/mongoose";
 import RoutineGroup from "@/models/RoutineGroup";
 
+export const dynamic = "force-dynamic";
+
 const DEV_USER_ID = "dev-local-user";
 
 function resolveUserId(id?: string) {

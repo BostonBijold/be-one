@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/mongoose";
 import HabitTemplate from "@/models/HabitTemplate";
 import RoutineItem from "@/models/RoutineItem";
 
+export const dynamic = "force-dynamic";
+
 const DEV_USER_ID = "dev-local-user";
 
 function resolveUserId(sessionId?: string) {

@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/mongoose";
 import RoutineGroup from "@/models/RoutineGroup";
 import { seedDefaultRoutines } from "@/lib/seed";
 
+export const dynamic = "force-dynamic";
+
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id) {

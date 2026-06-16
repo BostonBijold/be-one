@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/mongoose";
 import RoutineLog from "@/models/RoutineLog";
 import type { LogState } from "@/models/RoutineLog";
 
+export const dynamic = "force-dynamic";
+
 const DEV_USER_ID = "dev-local-user";
 
 function resolveUserId(sessionId?: string): string | null {

@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/mongoose";
 import GoalModel, { serializeGoal } from "@/models/Goal";
 
+export const dynamic = "force-dynamic";
+
 const DEV_USER_ID = "dev-local-user";
 function resolveUserId(id?: string) {
   return id ?? (process.env.SKIP_AUTH === "true" ? DEV_USER_ID : null);

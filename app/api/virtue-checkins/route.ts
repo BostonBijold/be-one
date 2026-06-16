@@ -5,6 +5,8 @@ import VirtueCheckIn from "@/models/VirtueCheckIn";
 import VirtueModel from "@/models/Virtue";
 import { weekStartDate } from "@/lib/seed-virtues";
 
+export const dynamic = "force-dynamic";
+
 const DEV_USER_ID = "dev-local-user";
 
 function resolveUserId(id?: string) {

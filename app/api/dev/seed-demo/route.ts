@@ -4,6 +4,8 @@ import RoutineGroup from "@/models/RoutineGroup";
 import RoutineItem from "@/models/RoutineItem";
 import RoutineLog from "@/models/RoutineLog";
 
+export const dynamic = "force-dynamic";
+
 const DEV_USER_ID = "dev-local-user";
 
 // Actual-minute offsets per morning habit (30 values, one per day oldest→today)

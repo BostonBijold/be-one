@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/mongoose";
 import VirtueModel from "@/models/Virtue";
 
+export const dynamic = "force-dynamic";
+
 const ADMIN_EMAIL = "bostonrbijold@gmail.com";
 
 function isAdmin(email?: string | null): boolean {

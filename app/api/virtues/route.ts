@@ -3,6 +3,8 @@ import { connectDB } from "@/lib/mongoose";
 import VirtueModel from "@/models/Virtue";
 import { ensureVirtues } from "@/lib/seed-virtues";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   await connectDB();
   await ensureVirtues();
