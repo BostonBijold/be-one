@@ -1,0 +1,371 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, X, ChevronDown, ChevronUp, Check } from "lucide-react";
+import HabitIcon, { IconPicker } from "@/components/HabitIcon";
+import AddHabitSheet from "@/components/AddHabitSheet";
+
+export interface EditItem {
+  _id: string;
+  name: string;
+  icon: string;
+  projectedMinutes: number;
+  order: number;
+}
+
+interface Props {
+  group: { _id: string; name: string; startTime: string | null; collapseAfter: string | null };
+  items: EditItem[];
+}
+
+// ── Sortable row ─────────────────────────────────────────────────────────────
+
+function SortableRow({
+  item,
+  isEditing,
+  onToggleEdit,
+  onSave,
+  onRemove,
+}: {
+  item: EditItem;
+  isEditing: boolean;
+  onToggleEdit: () => void;
+  onSave: (name: string, icon: string, projectedMinutes: number) => Promise<void>;
+  onRemove: () => Promise<void>;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item._id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.45 : 1,
+    zIndex: isDragging ? 20 : undefined,
+  };
+
+  const [editName, setEditName] = useState(item.name);
+  const [editIcon, setEditIcon] = useState(item.icon);
+  const [editMins, setEditMins] = useState(String(item.projectedMinutes));
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave(editName.trim() || item.name, editIcon || item.icon, parseInt(editMins) || item.projectedMinutes);
+    setSaving(false);
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="bg-card">
+      {/* Main row */}
+      <div className="flex items-center gap-3 px-4 py-3.5 min-h-[54px]">
+        <button
+          {...listeners}
+          {...attributes}
+          className="text-dim cursor-grab active:cursor-grabbing flex-shrink-0 p-1 touch-none"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical size={16} />
+        </button>
+
+        <div className="w-7 flex items-center justify-center flex-shrink-0">
+          <HabitIcon name={item.icon} size={17} className="text-muted" />
+        </div>
+
+        <span className="flex-1 font-body text-sm text-text truncate">{item.name}</span>
+
+        <span className="font-mono text-dim text-xs flex-shrink-0 mr-2">
+          {item.projectedMinutes}m
+        </span>
+
+        <button
+          onClick={onToggleEdit}
+          className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-dim hover:text-muted transition-colors"
+          aria-label={isEditing ? "Collapse" : "Edit"}
+        >
+          {isEditing ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        <button
+          onClick={onRemove}
+          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-burgundy/10 hover:bg-burgundy/20 text-burgundy-light transition-colors"
+          aria-label="Remove"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Inline edit form */}
+      {isEditing && (
+        <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
+          {/* Name + Minutes */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+                Name
+              </label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full bg-bg border border-border rounded-card px-3 py-2 font-body text-sm text-text outline-none focus:border-olive"
+              />
+            </div>
+            <div className="flex-shrink-0 w-20">
+              <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+                Minutes
+              </label>
+              <input
+                type="number"
+                value={editMins}
+                onChange={(e) => setEditMins(e.target.value)}
+                min={1}
+                className="w-full bg-bg border border-border rounded-card px-3 py-2 font-mono text-sm text-text outline-none focus:border-olive"
+              />
+            </div>
+          </div>
+          {/* Icon picker */}
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+              Icon
+            </label>
+            <IconPicker selected={editIcon} onSelect={setEditIcon} />
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-1.5 bg-olive/15 border border-olive/30 text-olive font-mono text-xs px-4 py-2 rounded-pill disabled:opacity-50"
+          >
+            <Check size={12} />
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
+
+export default function RoutineEditView({ group, items: initialItems }: Props) {
+  const router = useRouter();
+  const [items, setItems] = useState<EditItem[]>(initialItems);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
+
+  // Group schedule state
+  const [startTime, setStartTime] = useState(group.startTime ?? "");
+  const [endTime, setEndTime] = useState(group.collapseAfter ?? "");
+  const [scheduleChanged, setScheduleChanged] = useState(false);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [scheduleSaved, setScheduleSaved] = useState(false);
+
+  async function saveSchedule() {
+    setSavingSchedule(true);
+    await fetch(`/api/routines/${group._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startTime: startTime || null, collapseAfter: endTime || null }),
+    });
+    setSavingSchedule(false);
+    setScheduleChanged(false);
+    setScheduleSaved(true);
+    setTimeout(() => setScheduleSaved(false), 2000);
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = items.findIndex((i) => i._id === active.id);
+    const newIndex = items.findIndex((i) => i._id === over.id);
+    const reordered = arrayMove(items, oldIndex, newIndex);
+    setItems(reordered);
+
+    await fetch("/api/routine-items/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: reordered.map((it, idx) => ({ _id: it._id, order: idx })) }),
+    });
+  };
+
+  const handleSaveItem = async (id: string, name: string, icon: string, projectedMinutes: number) => {
+    setItems((prev) =>
+      prev.map((it) => (it._id === id ? { ...it, name, icon, projectedMinutes } : it))
+    );
+    setEditingId(null);
+    await fetch(`/api/routine-items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, icon, projectedMinutes }),
+    });
+  };
+
+  const handleRemove = async (id: string) => {
+    setItems((prev) => prev.filter((it) => it._id !== id));
+    await fetch(`/api/routine-items/${id}`, { method: "DELETE" });
+  };
+
+  const handleAdd = async (
+    templateId: string | null,
+    name: string,
+    icon: string,
+    projectedMinutes: number
+  ) => {
+    await fetch("/api/routine-items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: group._id, templateId, name, icon, projectedMinutes }),
+    });
+    setShowAddSheet(false);
+    router.refresh();
+  };
+
+  const totalMins = items.reduce((s, i) => s + i.projectedMinutes, 0);
+  const fmtTotal = totalMins < 60
+    ? `${totalMins}m`
+    : `${Math.floor(totalMins / 60)}h ${totalMins % 60 > 0 ? `${totalMins % 60}m` : ""}`.trim();
+
+  return (
+    <div className="min-h-screen bg-bg">
+      <div className="mx-auto max-w-mobile">
+        {/* Header */}
+        <header className="flex items-center gap-3 px-4 pt-10 pb-4 border-b border-border">
+          <Link
+            href="/routines"
+            className="font-mono text-dim text-sm flex items-center gap-1 min-h-[44px] pr-2"
+          >
+            ← Routines
+          </Link>
+          <div className="flex-1 text-center">
+            <h1 className="font-heading text-lg text-text">{group.name}</h1>
+            <p className="font-mono text-dim text-xs">{items.length} habits · {fmtTotal}</p>
+          </div>
+          <div className="w-20" /> {/* balance the back link */}
+        </header>
+
+        {/* Schedule */}
+        <div className="px-4 py-4 border-b border-border">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+            Time Window
+          </p>
+          <div className="flex gap-3 mb-3">
+            <div className="flex-1">
+              <label className="font-mono text-[10px] text-dim block mb-1.5">Start</label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => { setStartTime(e.target.value); setScheduleChanged(true); setScheduleSaved(false); }}
+                className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text outline-none focus:border-olive"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="font-mono text-[10px] text-dim block mb-1.5">End</label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => { setEndTime(e.target.value); setScheduleChanged(true); setScheduleSaved(false); }}
+                className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text outline-none focus:border-olive"
+              />
+            </div>
+          </div>
+          {startTime && endTime && (
+            <p className="font-mono text-[10px] text-dim mb-3">
+              Expands at {startTime} · collapses after {endTime}
+            </p>
+          )}
+          {scheduleChanged && (
+            <button
+              onClick={saveSchedule}
+              disabled={savingSchedule}
+              className="flex items-center gap-1.5 bg-olive/15 border border-olive/30 text-olive font-mono text-xs px-4 py-2 rounded-pill disabled:opacity-50"
+            >
+              <Check size={12} />
+              {savingSchedule ? "Saving…" : "Save schedule"}
+            </button>
+          )}
+          {scheduleSaved && (
+            <p className="font-mono text-[10px] text-olive">Schedule saved</p>
+          )}
+        </div>
+
+        {/* Sortable list */}
+        <div className="px-4 pt-5 pb-4">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={items.map((i) => i._id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="rounded-card overflow-hidden divide-y divide-border border border-border">
+                {items.map((item) => (
+                  <SortableRow
+                    key={item._id}
+                    item={item}
+                    isEditing={editingId === item._id}
+                    onToggleEdit={() =>
+                      setEditingId((prev) => (prev === item._id ? null : item._id))
+                    }
+                    onSave={(name, icon, mins) => handleSaveItem(item._id, name, icon, mins)}
+                    onRemove={() => handleRemove(item._id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+
+          {items.length === 0 && (
+            <div className="text-center py-10">
+              <p className="text-dim font-mono text-xs">No habits yet. Add one below.</p>
+            </div>
+          )}
+
+          {/* Add habit */}
+          <button
+            onClick={() => setShowAddSheet(true)}
+            className="mt-4 w-full flex items-center justify-center gap-2 border border-dashed border-border-light text-dim font-body text-sm py-4 rounded-card hover:border-olive/40 hover:text-olive transition-colors min-h-[44px]"
+          >
+            + Add habit to {group.name}
+          </button>
+        </div>
+      </div>
+
+      {showAddSheet && (
+        <AddHabitSheet
+          groupId={group._id}
+          groupName={group.name}
+          onAdd={handleAdd}
+          onClose={() => setShowAddSheet(false)}
+        />
+      )}
+    </div>
+  );
+}

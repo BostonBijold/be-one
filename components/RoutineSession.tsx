@@ -1,0 +1,322 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import { X, ChevronRight } from "lucide-react";
+import HabitIcon from "@/components/HabitIcon";
+import type { RowItem } from "@/components/RoutineItemRow";
+import type { LogState } from "@/models/RoutineLog";
+
+interface SessionLog {
+  itemId: string;
+  state: LogState;
+  actualMinutes: number;
+}
+
+interface Props {
+  groupName: string;
+  items: RowItem[];
+  today: string;
+  onClose: () => void;
+  onFinish: () => void; // called when session completes — triggers page refresh
+}
+
+function pad(n: number) {
+  return Math.max(0, n).toString().padStart(2, "0");
+}
+
+function fmtMins(secs: number) {
+  const m = Math.floor(Math.abs(secs) / 60);
+  const s = Math.abs(secs) % 60;
+  return `${pad(m)}:${pad(s)}`;
+}
+
+const RING_R = 70;
+const RING_CIRC = 2 * Math.PI * RING_R;
+
+export default function RoutineSession({ groupName, items, today, onClose, onFinish }: Props) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [isRunning, setIsRunning] = useState(true);
+  const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
+  const [phase, setPhase] = useState<"running" | "summary">("running");
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const currentItem = items[currentIndex];
+  const target = (currentItem?.projectedMinutes ?? 0) * 60;
+  const isOver = target > 0 && elapsed >= target;
+  const ratio = target > 0 ? Math.min(elapsed / target, 1) : 0;
+  const ringColor = isOver ? "#7a2e2e" : ratio >= 0.75 ? "#c47a2a" : "#5a6b35";
+  const dashOffset = RING_CIRC * (1 - ratio);
+
+  useEffect(() => {
+    if (isRunning && phase === "running") {
+      intervalRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isRunning, phase]);
+
+  const saveLog = useCallback(
+    async (itemId: string, state: LogState, actualMinutes: number) => {
+      await fetch("/api/routine-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routineItemId: itemId, date: today, state, actualMinutes }),
+      });
+    },
+    [today]
+  );
+
+  const advance = useCallback(
+    async (state: LogState, actualMinutes: number) => {
+      if (!currentItem) return;
+      const log: SessionLog = { itemId: currentItem._id, state, actualMinutes };
+      setSessionLogs((prev) => [...prev, log]);
+      await saveLog(currentItem._id, state, actualMinutes);
+
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < items.length) {
+        setCurrentIndex(nextIndex);
+        setElapsed(0);
+        setIsRunning(true);
+      } else {
+        setPhase("summary");
+        setIsRunning(false);
+      }
+    },
+    [currentItem, currentIndex, items.length, saveLog]
+  );
+
+  const handleDone = () => advance("done", Math.max(1, Math.round(elapsed / 60)));
+  const handleMissed = () => advance("missed", 0);
+  const handleRest = () => advance("rest", 0);
+
+  // ── Summary screen ──────────────────────────────────────────────────────
+  if (phase === "summary") {
+    const totalActual = sessionLogs.reduce((s, l) => s + l.actualMinutes, 0);
+    const totalProjected = items.reduce((s, i) => s + i.projectedMinutes, 0);
+    const doneCount = sessionLogs.filter((l) => l.state === "done").length;
+    const logMap = Object.fromEntries(sessionLogs.map((l) => [l.itemId, l]));
+
+    return (
+      <div className="fixed inset-0 bg-bg z-50 flex flex-col max-w-mobile mx-auto">
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="text-center pt-16 pb-10">
+            <div className="text-5xl mb-4">🎯</div>
+            <h2 className="font-heading text-2xl text-text">{groupName}</h2>
+            <p className="font-mono text-olive text-sm mt-1 tracking-wide">Complete</p>
+            <div className="flex justify-center gap-10 mt-8">
+              <div>
+                <p className="font-mono text-2xl text-text">{totalActual}m</p>
+                <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">actual</p>
+              </div>
+              <div>
+                <p className="font-mono text-2xl text-muted">{totalProjected}m</p>
+                <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">projected</p>
+              </div>
+              <div>
+                <p className="font-mono text-2xl text-text">{doneCount}/{items.length}</p>
+                <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">completed</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-card overflow-hidden divide-y divide-border">
+            {items.map((item) => {
+              const log = logMap[item._id];
+              if (!log) return null;
+              const variance = log.state === "done" ? log.actualMinutes - item.projectedMinutes : null;
+              return (
+                <div key={item._id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-7 flex items-center justify-center flex-shrink-0">
+                    <HabitIcon name={item.icon} size={16} className="text-muted" />
+                  </div>
+                  <span className="flex-1 font-body text-sm text-text truncate">{item.name}</span>
+                  {log.state === "done" && (
+                    <span className="font-mono text-xs text-muted mr-1">{log.actualMinutes}m</span>
+                  )}
+                  {variance !== null && (
+                    <span className={`font-mono text-xs ${variance > 0 ? "text-tobacco" : variance < 0 ? "text-olive-light" : "text-dim"}`}>
+                      {variance > 0 ? `+${variance}m` : variance < 0 ? `${variance}m` : "on target"}
+                    </span>
+                  )}
+                  <span className={`font-mono text-xs ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : "text-blue-muted"}`}>
+                    {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : "~"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="px-4 py-4 flex-shrink-0 border-t border-border">
+          <button
+            onClick={onFinish}
+            className="w-full py-4 rounded-card bg-olive text-text font-body font-medium"
+          >
+            Finish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Running screen ──────────────────────────────────────────────────────
+  const timeDisplay = isOver
+    ? `+${fmtMins(elapsed - target)}`
+    : fmtMins(target - elapsed);
+
+  const loggedIds = new Set(sessionLogs.map((l) => l.itemId));
+
+  return (
+    <div className="fixed inset-0 bg-bg z-50 flex flex-col max-w-mobile mx-auto">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 pt-10 pb-2 flex-shrink-0">
+        <button
+          onClick={onClose}
+          className="flex items-center justify-center w-9 h-9 rounded-full bg-card text-dim"
+        >
+          <X size={16} />
+        </button>
+        <span className="font-mono text-muted text-sm">
+          {currentIndex + 1} of {items.length}
+        </span>
+      </div>
+
+      {/* Current item info */}
+      <div className="text-center px-4 pt-2 pb-3 flex-shrink-0">
+        <div className="flex justify-center mb-3">
+          <HabitIcon name={currentItem.icon} size={44} strokeWidth={1.25} className="text-text" />
+        </div>
+        <h2 className="font-heading text-xl text-text leading-tight">{currentItem.name}</h2>
+        <p className="font-mono text-dim text-xs mt-1">{currentItem.projectedMinutes}m target</p>
+      </div>
+
+      {/* Ring timer */}
+      <div className="flex justify-center flex-shrink-0 pb-3">
+        <div className="relative w-44 h-44">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#2e2c22" strokeWidth="9" />
+            <circle
+              cx="80" cy="80" r={RING_R}
+              fill="none"
+              stroke={ringColor}
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeDasharray={RING_CIRC}
+              strokeDashoffset={dashOffset}
+              style={{ transition: "stroke-dashoffset 0.95s linear, stroke 0.4s ease" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span
+              className="font-mono text-3xl font-semibold leading-none"
+              style={{ color: isOver ? "#a03a3a" : "#e8e0cc" }}
+            >
+              {timeDisplay}
+            </span>
+            <span className="font-mono text-[10px] text-dim mt-1">
+              {isOver ? "over" : "remaining"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="px-4 pb-4 flex-shrink-0 space-y-2">
+        <button
+          onClick={handleDone}
+          className="w-full py-3 rounded-card bg-olive text-text font-body font-medium"
+        >
+          Done · log {Math.max(1, Math.round(elapsed / 60))}m
+        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsRunning((r) => !r)}
+            className="flex-1 py-2.5 rounded-card border border-border-light text-muted font-body text-sm min-h-[44px]"
+          >
+            {isRunning ? "Pause" : "Resume"}
+          </button>
+          <button
+            onClick={handleMissed}
+            className="flex-1 py-2.5 rounded-card border border-burgundy/30 text-burgundy-light font-body text-sm min-h-[44px]"
+          >
+            ✗ Missed
+          </button>
+          <button
+            onClick={handleRest}
+            className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-muted font-body text-sm min-h-[44px]"
+          >
+            ~ Rest
+          </button>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="h-px bg-border mx-4 flex-shrink-0" />
+
+      {/* Habit list */}
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
+        <div className="space-y-1">
+          {items.map((item, i) => {
+            const log = sessionLogs.find((l) => l.itemId === item._id);
+            const isCurrent = i === currentIndex;
+            const isDone = loggedIds.has(item._id);
+            const isUpcoming = !isDone && !isCurrent;
+
+            return (
+              <div
+                key={item._id}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors ${
+                  isCurrent
+                    ? "bg-olive/10 border border-olive/20"
+                    : isDone
+                    ? "opacity-60"
+                    : isUpcoming
+                    ? "opacity-40"
+                    : ""
+                }`}
+              >
+                <div className="w-6 flex items-center justify-center flex-shrink-0">
+                  <HabitIcon
+                    name={item.icon}
+                    size={15}
+                    strokeWidth={1.75}
+                    className={isCurrent ? "text-olive" : "text-dim"}
+                  />
+                </div>
+                <span
+                  className={`flex-1 font-body text-sm ${
+                    isCurrent ? "text-text font-medium" : "text-muted"
+                  } ${log && "line-through"}`}
+                >
+                  {item.name}
+                </span>
+                <span className="font-mono text-dim text-xs flex-shrink-0">
+                  {item.projectedMinutes}m
+                </span>
+                {log && (
+                  <span
+                    className={`font-mono text-xs flex-shrink-0 ml-1 ${
+                      log.state === "done"
+                        ? "text-olive"
+                        : log.state === "missed"
+                        ? "text-burgundy-light"
+                        : "text-blue-muted"
+                    }`}
+                  >
+                    {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : "~"}
+                  </span>
+                )}
+                {isCurrent && !log && (
+                  <ChevronRight size={14} className="text-olive flex-shrink-0" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

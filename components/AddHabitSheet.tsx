@@ -1,0 +1,258 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { X, Search, ChevronLeft } from "lucide-react";
+import HabitIcon, { IconPicker } from "@/components/HabitIcon";
+
+interface Template {
+  _id: string;
+  name: string;
+  icon: string;
+  defaultProjectedMinutes: number;
+  category: string;
+  timeOfDay: string;
+  isSystem: boolean;
+}
+
+interface Props {
+  groupId: string;
+  groupName: string;
+  onAdd: (templateId: string | null, name: string, icon: string, projectedMinutes: number) => Promise<void>;
+  onClose: () => void;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  hygiene: "Hygiene",
+  fitness: "Fitness",
+  nutrition: "Nutrition",
+  mindfulness: "Mindfulness",
+  reading: "Reading",
+  family: "Family",
+  productivity: "Productivity",
+  custom: "Custom",
+};
+
+export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Props) {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<"browse" | "create">("browse");
+  const [adding, setAdding] = useState<string | null>(null);
+
+  // Custom form state
+  const [customIcon, setCustomIcon] = useState("star");
+  const [customName, setCustomName] = useState("");
+  const [customMins, setCustomMins] = useState("15");
+  const [saving, setSaving] = useState(false);
+
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch(`/api/habit-templates?groupId=${groupId}`)
+      .then((r) => r.json())
+      .then((data) => { setTemplates(data); setLoading(false); });
+  }, [groupId]);
+
+  useEffect(() => {
+    if (view === "browse") searchRef.current?.focus();
+  }, [view]);
+
+  const filtered = templates.filter((t) =>
+    search.trim() === "" || t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Group by category
+  const byCategory = filtered.reduce<Record<string, Template[]>>((acc, t) => {
+    const key = t.isSystem ? t.category : "custom";
+    acc[key] = acc[key] ?? [];
+    acc[key].push(t);
+    return acc;
+  }, {});
+
+  const handleAddTemplate = async (t: Template) => {
+    setAdding(t._id);
+    await onAdd(t._id, t.name, t.icon, t.defaultProjectedMinutes);
+    setAdding(null);
+  };
+
+  const handleSaveCustom = async () => {
+    if (!customName.trim() || !customIcon) return;
+    setSaving(true);
+    // First create the template in the catalog
+    const res = await fetch("/api/habit-templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: customName.trim(),
+        icon: customIcon,
+        defaultProjectedMinutes: parseInt(customMins) || 15,
+        category: "custom",
+        timeOfDay: "any",
+      }),
+    });
+    const template = await res.json();
+    await onAdd(template._id, template.name, template.icon, template.defaultProjectedMinutes);
+    setSaving(false);
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
+
+      {/* Sheet */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-mobile mx-auto">
+        <div className="bg-card rounded-t-modal max-h-[80vh] flex flex-col">
+          {/* Handle */}
+          <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+            <div className="w-10 h-1 rounded-full bg-border-light" />
+          </div>
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
+            {view === "create" ? (
+              <button
+                onClick={() => setView("browse")}
+                className="flex items-center gap-1 text-muted font-body text-sm min-h-[44px]"
+              >
+                <ChevronLeft size={16} />
+                Back
+              </button>
+            ) : (
+              <h2 className="font-heading text-lg text-text">
+                Add to {groupName}
+              </h2>
+            )}
+            <button onClick={onClose} className="text-dim min-h-[44px] min-w-[44px] flex items-center justify-end">
+              <X size={18} />
+            </button>
+          </div>
+
+          {view === "browse" ? (
+            <>
+              {/* Create custom CTA */}
+              <div className="px-4 mb-3 flex-shrink-0">
+                <button
+                  onClick={() => setView("create")}
+                  className="w-full flex items-center gap-3 bg-olive/10 border border-olive/30 text-olive py-3 px-4 rounded-card font-body text-sm"
+                >
+                  <span className="text-lg">+</span>
+                  Create custom habit
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="px-4 mb-3 flex-shrink-0">
+                <div className="flex items-center gap-2 bg-bg border border-border rounded-card px-3 py-2">
+                  <Search size={14} className="text-dim flex-shrink-0" />
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    placeholder="Search habits..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 bg-transparent font-body text-sm text-text placeholder:text-dim outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="overflow-y-auto px-4 pb-8">
+                {loading && (
+                  <p className="text-dim font-mono text-xs text-center py-8">Loading catalog…</p>
+                )}
+
+                {!loading && filtered.length === 0 && (
+                  <p className="text-dim font-mono text-xs text-center py-8">
+                    No habits match &ldquo;{search}&rdquo;
+                  </p>
+                )}
+
+                {Object.entries(byCategory).map(([category, items]) => (
+                  <div key={category} className="mb-5">
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-2">
+                      {CATEGORY_LABELS[category] ?? category}
+                    </p>
+                    <div className="bg-bg rounded-card divide-y divide-border overflow-hidden">
+                      {items.map((t) => (
+                        <div key={t._id} className="flex items-center gap-3 px-3 py-3">
+                          <div className="w-7 flex items-center justify-center flex-shrink-0">
+                            <HabitIcon name={t.icon} size={17} className="text-muted" />
+                          </div>
+                          <span className="flex-1 font-body text-sm text-text">{t.name}</span>
+                          <span className="font-mono text-dim text-xs flex-shrink-0">
+                            {t.defaultProjectedMinutes}m
+                          </span>
+                          <button
+                            onClick={() => handleAddTemplate(t)}
+                            disabled={adding === t._id}
+                            className="ml-2 bg-olive/15 hover:bg-olive/30 border border-olive/30 text-olive font-mono text-xs px-3 py-1.5 rounded-pill transition-colors disabled:opacity-50 flex-shrink-0"
+                          >
+                            {adding === t._id ? "…" : "Add"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Create custom form */
+            <div className="px-4 pb-8 overflow-y-auto">
+              <p className="font-mono text-dim text-xs mb-6">
+                This habit will be saved to your personal catalog.
+              </p>
+
+              <div className="space-y-4">
+                {/* Icon */}
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                    Icon
+                  </label>
+                  <IconPicker selected={customIcon} onSelect={setCustomIcon} />
+                </div>
+
+                {/* Name */}
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                    Habit name
+                  </label>
+                  <input
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="e.g. Cold plunge"
+                    className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim outline-none focus:border-olive"
+                  />
+                </div>
+
+                {/* Time */}
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                    Target minutes
+                  </label>
+                  <input
+                    type="number"
+                    value={customMins}
+                    onChange={(e) => setCustomMins(e.target.value)}
+                    min={1}
+                    className="w-28 bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text outline-none focus:border-olive"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSaveCustom}
+                  disabled={!customName.trim() || saving}
+                  className="w-full py-4 rounded-card bg-olive text-text font-body font-medium disabled:opacity-40 mt-4"
+                >
+                  {saving ? "Saving…" : "Save & Add to Routine"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
