@@ -14,7 +14,6 @@ export default async function AnalyticsPage() {
   return (
     <AnalyticsView
       userName={session?.user?.name ?? "Developer"}
-      userImage={session?.user?.image ?? null}
       today={today}
       skipAuth={skipAuth}
     />

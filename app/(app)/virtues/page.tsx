@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/mongoose";
 import VirtueModel from "@/models/Virtue";
 import VirtueCheckIn from "@/models/VirtueCheckIn";
-import { ensureVirtues, currentVirtueOrder } from "@/lib/seed-virtues";
+import { currentVirtueOrder } from "@/lib/seed-virtues";
 import Header from "@/components/Header";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,6 @@ export default async function VirtuesPage() {
   const userId = session?.user?.id ?? (skipAuth ? DEV_USER_ID : null);
 
   await connectDB();
-  await ensureVirtues();
 
   const virtues = await VirtueModel.find({ isActive: true })
     .sort({ order: 1 })
@@ -52,7 +51,6 @@ export default async function VirtuesPage() {
       <div className="mx-auto max-w-mobile px-4 pb-24">
         <Header
           userName={session?.user?.name ?? "Developer"}
-          userImage={session?.user?.image ?? null}
           today={today}
           skipAuth={skipAuth}
         />

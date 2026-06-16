@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/mongoose";
 import VirtueModel from "@/models/Virtue";
-import { ensureVirtues, currentVirtueOrder } from "@/lib/seed-virtues";
+import { currentVirtueOrder } from "@/lib/seed-virtues";
 import VirtueDetailView from "@/components/VirtueDetailView";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,6 @@ export default async function VirtueDetailPage({
   if (!skipAuth && !session?.user?.id) redirect("/login");
 
   await connectDB();
-  await ensureVirtues();
 
   const virtue = await VirtueModel.findOne({ slug: params.slug, isActive: true }).lean();
   if (!virtue) notFound();
