@@ -26,6 +26,12 @@ body {
   overflow: hidden;
 }
 
+/* Safe-area scroll padding for app shell */
+.app-scroll {
+  padding-top: calc(4rem + env(safe-area-inset-top));
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 4px;

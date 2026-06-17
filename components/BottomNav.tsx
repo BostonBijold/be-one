@@ -99,7 +99,7 @@ export default function BottomNav() {
           }`}
           style={{
             left,
-            bottom,
+            bottom: `calc(${bottom}px + env(safe-area-inset-bottom))`,
             transitionDelay: open ? `${delay}ms` : "0ms",
           }}
         >
@@ -136,7 +136,7 @@ export default function BottomNav() {
           </button>
 
           {/* Tabs */}
-          <div className="bg-card border-t border-border">
+          <div className="bg-card border-t border-border" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             <div className="flex items-stretch h-16">
               {LEFT_TABS.map(({ href, label, Icon }) => {
                 const active = pathname === href || pathname.startsWith(href + "/");

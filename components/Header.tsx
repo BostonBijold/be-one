@@ -22,7 +22,7 @@ export default function Header({ userName, today, skipAuth }: Props) {
   const dayNum = date.getDate();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 bg-bg border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-30 bg-bg border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="mx-auto max-w-mobile px-4 h-16 grid grid-cols-[44px_1fr_44px] items-center">
 
         {/* Logo */}
