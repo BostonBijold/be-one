@@ -72,7 +72,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
 
   const handleAddTemplate = async (t: Template) => {
     setAdding(t._id);
-    await onAdd(t._id, t.name, t.icon, t.defaultProjectedMinutes);
+    await onAdd(t._id, t.name, t.icon, t.defaultProjectedMinutes, "standard");
     setAdding(null);
   };
 
