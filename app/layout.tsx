@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${playfair.variable} ${ibmMono.variable} ${inter.variable}`}
     >
-      <body className="min-h-screen bg-bg text-text font-body">
+      <body className="h-full bg-bg text-text font-body">
         {children}
         <ServiceWorkerRegister />
       </body>
