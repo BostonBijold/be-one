@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Play } from "lucide-react";
 import HabitIcon from "@/components/HabitIcon";
 import RoutineItemRow, { type RowItem } from "@/components/RoutineItemRow";
+import HabitItemCard from "@/components/HabitItemCard";
 import type { RoutineLogEntry } from "@/components/RoutinesView";
 import type { LogState } from "@/models/RoutineLog";
 import { isItemVisibleOn } from "@/lib/routine-visibility";
@@ -161,7 +162,10 @@ export default function RoutineGroupCard({
   const actualColor =
     variance > 5 ? "text-tobacco" : variance < -5 ? "text-olive-light" : "text-muted";
 
-  const toggle = () => { setIsCollapsed((c) => !c); setExpandedItemId(null); };
+  const isHabitGroup = group.timeOfDay === "habit";
+  // Habit groups never collapse — each card shows its own state directly
+  const effectivelyCollapsed = isCollapsed && !isHabitGroup;
+  const toggle = () => { if (!isHabitGroup) setIsCollapsed((c) => !c); setExpandedItemId(null); };
 
   // Back-entry UX (Done + minutes input instead of timer) applies when:
   // - it's a different calendar day, OR
@@ -206,25 +210,27 @@ export default function RoutineGroupCard({
       </div>
 
       {/* ── Collapsed: complete summary ──────────────────────────────────── */}
-      {isCollapsed && isComplete && (
+      {effectivelyCollapsed && isComplete && (
         <button
           onClick={toggle}
           className="w-full text-left bg-card rounded-card border-l-[3px] border-olive px-4 py-3.5 hover:bg-card-hover transition-colors"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <span className="font-mono text-xs text-dim">
-              {fmtMins(projectedMins)} projected
-            </span>
-            <span className="font-mono text-dim text-xs">→</span>
-            <span className={`font-mono text-xs font-medium ${actualColor}`}>
-              {fmtMins(actualMins)} actual
-            </span>
-            {variance !== 0 && actualMins > 0 && (
-              <span className={`font-mono text-[10px] ${actualColor} ml-auto`}>
-                {variance > 0 ? `+${fmtMins(variance)}` : `-${fmtMins(Math.abs(variance))}`}
+          {projectedMins > 0 && (
+            <div className="flex items-center gap-3 mb-3">
+              <span className="font-mono text-xs text-dim">
+                {fmtMins(projectedMins)} projected
               </span>
-            )}
-          </div>
+              <span className="font-mono text-dim text-xs">→</span>
+              <span className={`font-mono text-xs font-medium ${actualColor}`}>
+                {fmtMins(actualMins)} actual
+              </span>
+              {variance !== 0 && actualMins > 0 && (
+                <span className={`font-mono text-[10px] ${actualColor} ml-auto`}>
+                  {variance > 0 ? `+${fmtMins(variance)}` : `-${fmtMins(Math.abs(variance))}`}
+                </span>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap gap-x-3 gap-y-2">
             {visibleItems.map((item) => {
               const log = logs[item._id];
@@ -251,7 +257,7 @@ export default function RoutineGroupCard({
       )}
 
       {/* ── Collapsed: incomplete dot summary (today, timeframe elapsed) ── */}
-      {isCollapsed && !isComplete && (
+      {effectivelyCollapsed && !isComplete && (
         <button
           onClick={toggle}
           className="w-full text-left bg-card rounded-card px-4 py-3.5 flex items-center gap-2 hover:bg-card-hover transition-colors"
@@ -278,7 +284,7 @@ export default function RoutineGroupCard({
       )}
 
       {/* ── Expanded ────────────────────────────────────────────────────── */}
-      {!isCollapsed && (
+      {!effectivelyCollapsed && (
         <div>
           {/* Banner only for genuinely different-day back-entries */}
           {isPastDate && (
@@ -289,27 +295,44 @@ export default function RoutineGroupCard({
             </div>
           )}
 
-          <div className="bg-card rounded-card overflow-hidden divide-y divide-border">
-            {visibleItems.map((item) => (
-              <RoutineItemRow
-                key={item._id}
-                item={item}
-                log={logs[item._id]}
-                weekLogs={weekLogs[item._id] ?? []}
-                weekDates={weekDates}
-                isExpanded={expandedItemId === item._id}
-                isBackEntry={isBackEntry}
-                selectedDate={selectedDate}
-                onToggleExpand={() =>
-                  setExpandedItemId((prev) => (prev === item._id ? null : item._id))
-                }
-                onStartTimer={() => onStartTimer(item)}
-                onStateChange={(s, opts) => onStateChange(item._id, s, opts)}
-                onOpenCheckIn={() => onOpenCheckIn(item)}
-                onOpenReview={() => onOpenReview(item)}
-              />
-            ))}
-          </div>
+          {group.timeOfDay === "habit" ? (
+            <div className="space-y-2">
+              {visibleItems.map((item) => (
+                <HabitItemCard
+                  key={item._id}
+                  item={item}
+                  log={logs[item._id]}
+                  weekLogs={weekLogs[item._id] ?? []}
+                  weekDates={weekDates}
+                  isBackEntry={isBackEntry}
+                  onStartTimer={() => onStartTimer(item)}
+                  onStateChange={(s, opts) => onStateChange(item._id, s, opts)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card rounded-card overflow-hidden divide-y divide-border">
+              {visibleItems.map((item) => (
+                <RoutineItemRow
+                  key={item._id}
+                  item={item}
+                  log={logs[item._id]}
+                  weekLogs={weekLogs[item._id] ?? []}
+                  weekDates={weekDates}
+                  isExpanded={expandedItemId === item._id}
+                  isBackEntry={isBackEntry}
+                  selectedDate={selectedDate}
+                  onToggleExpand={() =>
+                    setExpandedItemId((prev) => (prev === item._id ? null : item._id))
+                  }
+                  onStartTimer={() => onStartTimer(item)}
+                  onStateChange={(s, opts) => onStateChange(item._id, s, opts)}
+                  onOpenCheckIn={() => onOpenCheckIn(item)}
+                  onOpenReview={() => onOpenReview(item)}
+                />
+              ))}
+            </div>
+          )}
 
           {visibleItems.length > 0 && !isComplete && !isPastDate && group.timeOfDay !== "habit" && (
             <button

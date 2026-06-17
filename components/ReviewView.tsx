@@ -157,18 +157,17 @@ export default function ReviewView({
 
         {/* Page title */}
         <div className="mb-4">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">
-            Franklin Review
-          </p>
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-2xl italic text-text">
               Virtues
             </h1>
-            <VirtuesHowItWorks autoOpen={!virtueWalkthroughSeen} />
+            <VirtuesHowItWorks autoOpen={!virtueWalkthroughSeen} iconOnly />
           </div>
-          <p className="font-mono text-[10px] text-dim mt-2">
-            Daily YES / NO, tap a virtue to read more
-          </p>
+          {!virtueWalkthroughSeen && (
+            <p className="font-mono text-[10px] text-dim mt-2">
+              Daily YES / NO, tap a virtue to read more
+            </p>
+          )}
         </div>
 
         {/* Today's Check-in — always available unless already submitted */}

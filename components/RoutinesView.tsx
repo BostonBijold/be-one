@@ -75,11 +75,15 @@ export default function RoutinesView({
   useEffect(() => {
     if (autoStartNext) {
       const logsMap = Object.fromEntries(initialLogs.map((l) => [l.routineItemId, l]));
-      const nextGroup = routineGroups.find((g) => {
+      // Find the first incomplete item across all routine groups (morning → afternoon → evening)
+      let found: TimerItem | null = null;
+      outer: for (const g of routineGroups) {
         const visible = g.items.filter((i) => isItemVisibleOn(i, today));
-        return visible.length > 0 && !visible.every((i) => !!logsMap[i._id]);
-      });
-      if (nextGroup) setActiveSession({ group: nextGroup });
+        for (const item of visible) {
+          if (!logsMap[item._id]) { found = item; break outer; }
+        }
+      }
+      if (found) setTimerItem(found);
       router.replace("/routines");
     }
     if (autoAddHabit) {

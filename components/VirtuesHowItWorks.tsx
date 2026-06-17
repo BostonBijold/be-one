@@ -6,9 +6,10 @@ import VirtueWalkthroughModal from "@/components/VirtueWalkthroughModal";
 
 interface Props {
   autoOpen: boolean;
+  iconOnly?: boolean;
 }
 
-export default function VirtuesHowItWorks({ autoOpen }: Props) {
+export default function VirtuesHowItWorks({ autoOpen, iconOnly = false }: Props) {
   const [open, setOpen] = useState(false);
 
   // Delay auto-open one frame so page paint completes first
@@ -26,10 +27,12 @@ export default function VirtuesHowItWorks({ autoOpen }: Props) {
         className="flex items-center gap-1.5 text-dim hover:text-muted transition-colors min-h-[44px] px-1"
         aria-label="How the virtue system works"
       >
-        <Info size={14} />
-        <span className="font-mono text-[10px] uppercase tracking-widest">
-          How This Works
-        </span>
+        <Info size={iconOnly ? 16 : 14} />
+        {!iconOnly && (
+          <span className="font-mono text-[10px] uppercase tracking-widest">
+            How This Works
+          </span>
+        )}
       </button>
 
       {open && <VirtueWalkthroughModal onClose={() => setOpen(false)} />}
