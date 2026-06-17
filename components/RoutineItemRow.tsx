@@ -12,7 +12,7 @@ export interface RowItem {
   icon: string;
   projectedMinutes: number;
   order: number;
-  itemType?: "standard" | "virtue_checkin" | "weekly_review";
+  itemType?: "standard" | "checkbox" | "virtue_checkin" | "weekly_review";
 }
 
 interface Props {
@@ -67,9 +67,10 @@ export default function RoutineItemRow({
   // Day-of-week for the selected date (0=Sun)
   const dow = new Date(selectedDate + "T12:00:00").getDay();
   const isSunday = dow === 0;
+  const isCheckbox = item.itemType === "checkbox";
   const isSpecial = item.itemType === "virtue_checkin" || item.itemType === "weekly_review";
   const variance =
-    state === "done" && log?.actualMinutes != null
+    !isCheckbox && state === "done" && log?.actualMinutes != null
       ? log.actualMinutes - item.projectedMinutes
       : null;
 
@@ -119,6 +120,8 @@ export default function RoutineItemRow({
                 {LABEL[state]}
               </span>
             </>
+          ) : isCheckbox ? (
+            <span className="font-mono text-dim text-xs">checkbox</span>
           ) : (
             <span className="font-mono text-dim text-xs">{fmtMins(item.projectedMinutes)}</span>
           )}
@@ -158,8 +161,18 @@ export default function RoutineItemRow({
                 )
               )}
 
+              {/* Checkbox: simple done, no timer */}
+              {isCheckbox && (
+                <button
+                  onClick={() => onStateChange("done", { isBackEntry })}
+                  className="w-full flex items-center justify-center gap-2 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
+                >
+                  <span className="font-body text-sm font-medium">✓ Done</span>
+                </button>
+              )}
+
               {/* Standard: timer or back-entry */}
-              {!isSpecial && (
+              {!isSpecial && !isCheckbox && (
                 isBackEntry ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -212,7 +225,7 @@ export default function RoutineItemRow({
             </>
           ) : (
             <div className="flex gap-2 flex-wrap">
-              {state !== "done" && !isSpecial && (
+              {state !== "done" && !isSpecial && !isCheckbox && (
                 isBackEntry ? (
                   <div className="flex items-center gap-2 flex-1">
                     <button

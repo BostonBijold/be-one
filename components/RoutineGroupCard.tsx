@@ -143,8 +143,9 @@ export default function RoutineGroupCard({
   }, [isComplete, isPastDate]);
 
   const doneCount = visibleItems.filter((i) => logs[i._id]?.state === "done").length;
-  const projectedMins = visibleItems.reduce((s, i) => s + i.projectedMinutes, 0);
-  const actualMins = visibleItems.reduce((s, i) => s + (logs[i._id]?.actualMinutes ?? 0), 0);
+  const timedItems = visibleItems.filter((i) => i.itemType !== "checkbox");
+  const projectedMins = timedItems.reduce((s, i) => s + i.projectedMinutes, 0);
+  const actualMins = timedItems.reduce((s, i) => s + (logs[i._id]?.actualMinutes ?? 0), 0);
   const variance = actualMins - projectedMins;
   const actualColor =
     variance > 5 ? "text-tobacco" : variance < -5 ? "text-olive-light" : "text-muted";

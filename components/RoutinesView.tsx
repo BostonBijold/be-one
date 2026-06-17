@@ -90,6 +90,15 @@ export default function RoutinesView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Correct for server/client timezone mismatch — server uses UTC, browser knows local date.
+  useEffect(() => {
+    const localDate = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local tz
+    if (localDate !== today) {
+      router.replace(`/routines?date=${localDate}`);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Re-fetch logs whenever the selected date changes
   useEffect(() => {
     if (selectedDate === today) {
@@ -188,7 +197,8 @@ export default function RoutinesView({
       templateId: string | null,
       name: string,
       icon: string,
-      projectedMinutes: number
+      projectedMinutes: number,
+      itemType: "standard" | "checkbox" = "standard"
     ) => {
       if (!addHabitGroup) return;
       await fetch("/api/routine-items", {
@@ -200,6 +210,7 @@ export default function RoutinesView({
           name,
           icon,
           projectedMinutes,
+          itemType,
         }),
       });
       setAddHabitGroup(null);

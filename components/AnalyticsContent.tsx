@@ -39,6 +39,9 @@ interface HabitStats {
   avgActualMins: number | null;
   avgVariance: number | null;
   completionRate: number;
+  engagedDays: number;
+  totalDays: number;
+  itemType: string;
 }
 
 interface AnalyticsData {
@@ -121,6 +124,7 @@ function RoutineChart({
 function HabitRow({ habit }: { habit: HabitStats }) {
   const pct = habit.completionRate;
   const pctDisplay = Math.round(pct * 100);
+  const isCheckbox = habit.itemType === "checkbox";
   const varianceColor =
     habit.avgVariance === null ? "text-dim"
     : habit.avgVariance > 5   ? "text-tobacco"
@@ -134,7 +138,9 @@ function HabitRow({ habit }: { habit: HabitStats }) {
           <HabitIcon name={habit.icon} size={14} strokeWidth={1.75} className="text-muted" />
         </div>
         <span className="flex-1 font-body text-sm text-text leading-tight">{habit.name}</span>
-        <span className="font-mono text-[10px] text-dim flex-shrink-0">{habit.projectedMinutes}m proj</span>
+        {!isCheckbox && (
+          <span className="font-mono text-[10px] text-dim flex-shrink-0">{habit.projectedMinutes}m proj</span>
+        )}
       </div>
 
       <div className="flex items-center gap-3 pl-7 mb-2">
@@ -148,7 +154,7 @@ function HabitRow({ habit }: { habit: HabitStats }) {
         {habit.unloggedCount > 0 && (
           <span className="font-mono text-xs text-dim">{habit.unloggedCount} unlogged</span>
         )}
-        {habit.avgActualMins !== null && (
+        {!isCheckbox && habit.avgActualMins !== null && (
           <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
             <span className="font-mono text-xs text-muted">{habit.avgActualMins}m avg</span>
             {habit.avgVariance !== null && habit.avgVariance !== 0 && (
@@ -172,10 +178,13 @@ function HabitRow({ habit }: { habit: HabitStats }) {
               }}
             />
           </div>
-          <span className="font-mono text-[10px] text-dim w-8 text-right flex-shrink-0">
-            {pctDisplay}%
+          <span className="font-mono text-[10px] w-8 text-right flex-shrink-0" style={{ color: completionBarColor(pct) }}>
+            {habit.engagedDays > 0 ? `${pctDisplay}%` : "—"}
           </span>
         </div>
+        <p className="font-mono text-[9px] text-dim mt-1">
+          {habit.engagedDays} of {habit.totalDays} days logged
+        </p>
       </div>
     </div>
   );

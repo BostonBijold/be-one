@@ -101,12 +101,14 @@ export async function GET(req: NextRequest) {
     const missedCount = daily.filter((d) => d.state === "missed").length;
     const restCount = daily.filter((d) => d.state === "rest").length;
 
+    const isCheckbox = item.itemType === "checkbox";
     const avgActualMins =
-      doneDays.length > 0
+      !isCheckbox && doneDays.length > 0
         ? Math.round(doneDays.reduce((s, d) => s + (d.actualMinutes ?? item.projectedMinutes), 0) / doneDays.length)
         : null;
     const avgVariance = avgActualMins !== null ? avgActualMins - item.projectedMinutes : null;
 
+    const engagedDays = doneCount + missedCount; // rest and unlogged don't count
     return {
       _id: itemId,
       name: item.name,
@@ -121,7 +123,10 @@ export async function GET(req: NextRequest) {
       unloggedCount: dates.length - doneCount - missedCount - restCount,
       avgActualMins,
       avgVariance,
-      completionRate: doneCount / dates.length,
+      completionRate: engagedDays > 0 ? doneCount / engagedDays : 0,
+      engagedDays,
+      totalDays: dates.length,
+      itemType: item.itemType ?? "standard",
     };
   });
 

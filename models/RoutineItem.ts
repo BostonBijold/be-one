@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, model, models } from "mongoose";
 
-export type ItemType = "standard" | "virtue_checkin" | "weekly_review";
+export type ItemType = "standard" | "checkbox" | "virtue_checkin" | "weekly_review";
 
 export interface IRoutineItem extends Document {
   groupId: mongoose.Types.ObjectId;
@@ -26,7 +26,7 @@ const RoutineItemSchema = new Schema<IRoutineItem>(
     order: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     linkedGoalId: { type: Schema.Types.ObjectId, ref: "Goal", default: null },
-    itemType: { type: String, enum: ["standard", "virtue_checkin", "weekly_review"], default: "standard" },
+    itemType: { type: String, enum: ["standard", "checkbox", "virtue_checkin", "weekly_review"], default: "standard" },
   },
   { timestamps: true }
 );

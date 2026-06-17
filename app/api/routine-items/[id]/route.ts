@@ -44,7 +44,7 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const updates = await req.json();
-  const allowed = ["name", "icon", "projectedMinutes"] as const;
+  const allowed = ["name", "icon", "projectedMinutes", "itemType"] as const;
   const sanitized: Partial<Record<(typeof allowed)[number], unknown>> = {};
   for (const key of allowed) {
     if (key in updates) sanitized[key] = updates[key];
@@ -64,5 +64,6 @@ export async function PATCH(
     name: item.name,
     icon: item.icon,
     projectedMinutes: item.projectedMinutes,
+    itemType: item.itemType,
   });
 }

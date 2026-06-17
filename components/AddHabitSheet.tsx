@@ -17,7 +17,7 @@ interface Template {
 interface Props {
   groupId: string;
   groupName: string;
-  onAdd: (templateId: string | null, name: string, icon: string, projectedMinutes: number) => Promise<void>;
+  onAdd: (templateId: string | null, name: string, icon: string, projectedMinutes: number, itemType: "standard" | "checkbox") => Promise<void>;
   onClose: () => void;
 }
 
@@ -43,6 +43,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
   const [customIcon, setCustomIcon] = useState("star");
   const [customName, setCustomName] = useState("");
   const [customMins, setCustomMins] = useState("15");
+  const [customType, setCustomType] = useState<"standard" | "checkbox">("standard");
   const [saving, setSaving] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -85,13 +86,13 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
       body: JSON.stringify({
         name: customName.trim(),
         icon: customIcon,
-        defaultProjectedMinutes: parseInt(customMins) || 15,
+        defaultProjectedMinutes: customType === "checkbox" ? 0 : (parseInt(customMins) || 15),
         category: "custom",
         timeOfDay: "any",
       }),
     });
     const template = await res.json();
-    await onAdd(template._id, template.name, template.icon, template.defaultProjectedMinutes);
+    await onAdd(template._id, template.name, template.icon, template.defaultProjectedMinutes, customType);
     setSaving(false);
   };
 
@@ -205,6 +206,38 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
               </p>
 
               <div className="space-y-4">
+                {/* Type */}
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                    Type
+                  </label>
+                  <div className="flex bg-bg border border-border rounded-card p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setCustomType("standard")}
+                      className={`flex-1 py-2 rounded-card font-mono text-xs transition-colors ${
+                        customType === "standard" ? "bg-olive text-text" : "text-dim"
+                      }`}
+                    >
+                      ▶ Timed
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCustomType("checkbox")}
+                      className={`flex-1 py-2 rounded-card font-mono text-xs transition-colors ${
+                        customType === "checkbox" ? "bg-olive text-text" : "text-dim"
+                      }`}
+                    >
+                      ✓ Checkbox
+                    </button>
+                  </div>
+                  <p className="font-mono text-[9px] text-dim mt-1.5">
+                    {customType === "standard"
+                      ? "Starts a timer. Tracks projected vs actual time."
+                      : "Tap to mark done. No timer. Simple ✓/✗ tracking."}
+                  </p>
+                </div>
+
                 {/* Icon */}
                 <div>
                   <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
@@ -222,24 +255,26 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                     type="text"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="e.g. Cold plunge"
+                    placeholder="e.g. Drink creatine"
                     className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim outline-none focus:border-olive"
                   />
                 </div>
 
-                {/* Time */}
-                <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
-                    Target minutes
-                  </label>
-                  <input
-                    type="number"
-                    value={customMins}
-                    onChange={(e) => setCustomMins(e.target.value)}
-                    min={1}
-                    className="w-28 bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text outline-none focus:border-olive"
-                  />
-                </div>
+                {/* Time — timed only */}
+                {customType === "standard" && (
+                  <div>
+                    <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                      Target minutes
+                    </label>
+                    <input
+                      type="number"
+                      value={customMins}
+                      onChange={(e) => setCustomMins(e.target.value)}
+                      min={1}
+                      className="w-28 bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text outline-none focus:border-olive"
+                    />
+                  </div>
+                )}
 
                 <button
                   onClick={handleSaveCustom}

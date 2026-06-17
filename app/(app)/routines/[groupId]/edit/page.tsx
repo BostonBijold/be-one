@@ -48,6 +48,7 @@ export default async function EditRoutinePage({
         icon: i.icon,
         projectedMinutes: i.projectedMinutes,
         order: i.order,
+        itemType: (i.itemType ?? "standard") as "standard" | "checkbox",
       }))}
     />
   );

@@ -31,6 +31,7 @@ export interface EditItem {
   icon: string;
   projectedMinutes: number;
   order: number;
+  itemType: "standard" | "checkbox";
 }
 
 interface Props {
@@ -50,7 +51,7 @@ function SortableRow({
   item: EditItem;
   isEditing: boolean;
   onToggleEdit: () => void;
-  onSave: (name: string, icon: string, projectedMinutes: number) => Promise<void>;
+  onSave: (name: string, icon: string, projectedMinutes: number, itemType: "standard" | "checkbox") => Promise<void>;
   onRemove: () => Promise<void>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -66,11 +67,13 @@ function SortableRow({
   const [editName, setEditName] = useState(item.name);
   const [editIcon, setEditIcon] = useState(item.icon);
   const [editMins, setEditMins] = useState(String(item.projectedMinutes));
+  const [editType, setEditType] = useState<"standard" | "checkbox">(item.itemType);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(editName.trim() || item.name, editIcon || item.icon, parseInt(editMins) || item.projectedMinutes);
+    const mins = editType === "checkbox" ? 0 : (parseInt(editMins) || item.projectedMinutes);
+    await onSave(editName.trim() || item.name, editIcon || item.icon, mins, editType);
     setSaving(false);
   };
 
@@ -94,7 +97,7 @@ function SortableRow({
         <span className="flex-1 font-body text-sm text-text truncate">{item.name}</span>
 
         <span className="font-mono text-dim text-xs flex-shrink-0 mr-2">
-          {item.projectedMinutes}m
+          {item.itemType === "checkbox" ? "✓" : `${item.projectedMinutes}m`}
         </span>
 
         <button
@@ -117,6 +120,32 @@ function SortableRow({
       {/* Inline edit form */}
       {isEditing && (
         <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
+          {/* Type toggle */}
+          <div>
+            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+              Type
+            </label>
+            <div className="flex bg-bg border border-border rounded-card p-0.5">
+              <button
+                type="button"
+                onClick={() => setEditType("standard")}
+                className={`flex-1 py-1.5 rounded-card font-mono text-xs transition-colors ${
+                  editType === "standard" ? "bg-olive text-text" : "text-dim"
+                }`}
+              >
+                ▶ Timed
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditType("checkbox")}
+                className={`flex-1 py-1.5 rounded-card font-mono text-xs transition-colors ${
+                  editType === "checkbox" ? "bg-olive text-text" : "text-dim"
+                }`}
+              >
+                ✓ Checkbox
+              </button>
+            </div>
+          </div>
           {/* Name + Minutes */}
           <div className="flex gap-3">
             <div className="flex-1">
@@ -130,18 +159,20 @@ function SortableRow({
                 className="w-full bg-bg border border-border rounded-card px-3 py-2 font-body text-sm text-text outline-none focus:border-olive"
               />
             </div>
-            <div className="flex-shrink-0 w-20">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
-                Minutes
-              </label>
-              <input
-                type="number"
-                value={editMins}
-                onChange={(e) => setEditMins(e.target.value)}
-                min={1}
-                className="w-full bg-bg border border-border rounded-card px-3 py-2 font-mono text-sm text-text outline-none focus:border-olive"
-              />
-            </div>
+            {editType === "standard" && (
+              <div className="flex-shrink-0 w-20">
+                <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+                  Minutes
+                </label>
+                <input
+                  type="number"
+                  value={editMins}
+                  onChange={(e) => setEditMins(e.target.value)}
+                  min={1}
+                  className="w-full bg-bg border border-border rounded-card px-3 py-2 font-mono text-sm text-text outline-none focus:border-olive"
+                />
+              </div>
+            )}
           </div>
           {/* Icon picker */}
           <div>
@@ -214,15 +245,15 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
     });
   };
 
-  const handleSaveItem = async (id: string, name: string, icon: string, projectedMinutes: number) => {
+  const handleSaveItem = async (id: string, name: string, icon: string, projectedMinutes: number, itemType: "standard" | "checkbox") => {
     setItems((prev) =>
-      prev.map((it) => (it._id === id ? { ...it, name, icon, projectedMinutes } : it))
+      prev.map((it) => (it._id === id ? { ...it, name, icon, projectedMinutes, itemType } : it))
     );
     setEditingId(null);
     await fetch(`/api/routine-items/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, icon, projectedMinutes }),
+      body: JSON.stringify({ name, icon, projectedMinutes, itemType }),
     });
   };
 
@@ -235,18 +266,19 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
     templateId: string | null,
     name: string,
     icon: string,
-    projectedMinutes: number
+    projectedMinutes: number,
+    itemType: "standard" | "checkbox" = "standard"
   ) => {
     await fetch("/api/routine-items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupId: group._id, templateId, name, icon, projectedMinutes }),
+      body: JSON.stringify({ groupId: group._id, templateId, name, icon, projectedMinutes, itemType }),
     });
     setShowAddSheet(false);
     router.refresh();
   };
 
-  const totalMins = items.reduce((s, i) => s + i.projectedMinutes, 0);
+  const totalMins = items.filter((i) => i.itemType !== "checkbox").reduce((s, i) => s + i.projectedMinutes, 0);
   const fmtTotal = totalMins < 60
     ? `${totalMins}m`
     : `${Math.floor(totalMins / 60)}h ${totalMins % 60 > 0 ? `${totalMins % 60}m` : ""}`.trim();
@@ -334,7 +366,7 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
                     onToggleEdit={() =>
                       setEditingId((prev) => (prev === item._id ? null : item._id))
                     }
-                    onSave={(name, icon, mins) => handleSaveItem(item._id, name, icon, mins)}
+                    onSave={(name, icon, mins, type) => handleSaveItem(item._id, name, icon, mins, type)}
                     onRemove={() => handleRemove(item._id)}
                   />
                 ))}

@@ -26,7 +26,7 @@ function getWeekDates(): string[] {
 export default async function RoutinesPage({
   searchParams,
 }: {
-  searchParams?: { startNext?: string; addHabit?: string };
+  searchParams?: { startNext?: string; addHabit?: string; date?: string };
 }) {
   const skipAuth = process.env.SKIP_AUTH === "true";
   const session = await auth();
@@ -79,7 +79,8 @@ export default async function RoutinesPage({
 
   const isAdmin = skipAuth || session?.user?.email === ADMIN_EMAIL;
 
-  const today = new Date().toISOString().split("T")[0];
+  // Prefer the client-supplied date (local timezone) over the server UTC date.
+  const today = searchParams?.date ?? new Date().toISOString().split("T")[0];
   const weekDates = getWeekDates();
 
   const groups = await RoutineGroup.find({ userId }).sort({ order: 1 }).lean();

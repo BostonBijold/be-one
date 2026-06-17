@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const userId = resolveUserId(session?.user?.id);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { groupId, templateId, name, icon, projectedMinutes } = await req.json();
+  const { groupId, templateId, name, icon, projectedMinutes, itemType } = await req.json();
 
   if (!groupId || !name?.trim() || !icon) {
     return NextResponse.json({ error: "groupId, name, and icon required" }, { status: 400 });
@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
     templateId: templateId ?? null,
     name: name.trim(),
     icon,
-    projectedMinutes: projectedMinutes ?? 15,
+    projectedMinutes: itemType === "checkbox" ? 0 : (projectedMinutes ?? 15),
+    itemType: itemType ?? "standard",
     order: nextOrder,
     isActive: true,
     linkedGoalId: null,
