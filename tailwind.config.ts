@@ -18,8 +18,8 @@ const config: Config = {
         muted: "#9a9280",
         dim: "#5a5548",
         // Accents
-        olive: "#5a6b35",
-        "olive-light": "#7a9248",
+        olive: "#7a9248",
+        "olive-light": "#8aaa55",
         gold: "#c4a84a",
         tobacco: "#8b5a2b",
         burgundy: "#7a2e2e",

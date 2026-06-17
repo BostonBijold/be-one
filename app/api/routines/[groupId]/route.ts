@@ -22,7 +22,6 @@ export async function PATCH(
   const body = await req.json() as {
     name?: string;
     startTime?: string | null;
-    collapseAfter?: string | null;
   };
 
   await connectDB();
@@ -30,7 +29,6 @@ export async function PATCH(
   const update: Record<string, unknown> = {};
   if (body.name !== undefined) update.name = body.name.trim();
   if (body.startTime !== undefined) update.startTime = body.startTime || null;
-  if (body.collapseAfter !== undefined) update.collapseAfter = body.collapseAfter || null;
 
   const group = await RoutineGroup.findOneAndUpdate(
     { _id: params.groupId, userId },
@@ -44,6 +42,5 @@ export async function PATCH(
     _id: group._id.toString(),
     name: group.name,
     startTime: group.startTime ?? null,
-    collapseAfter: group.collapseAfter ?? null,
   });
 }

@@ -17,7 +17,7 @@ interface Props {
   items: RowItem[];
   today: string;
   onClose: () => void;
-  onFinish: () => void; // called when session completes — triggers page refresh
+  onFinish: () => void;
 }
 
 function pad(n: number) {
@@ -32,6 +32,7 @@ function fmtMins(secs: number) {
 
 const RING_R = 70;
 const RING_CIRC = 2 * Math.PI * RING_R;
+const STOPWATCH_SOFT_CAP = 30 * 60;
 
 export default function RoutineSession({ groupName, items, today, onClose, onFinish }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,20 +43,28 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const currentItem = items[currentIndex];
-  const target = (currentItem?.projectedMinutes ?? 0) * 60;
-  const isOver = target > 0 && elapsed >= target;
-  const ratio = target > 0 ? Math.min(elapsed / target, 1) : 0;
-  const ringColor = isOver ? "#7a2e2e" : ratio >= 0.75 ? "#c47a2a" : "#5a6b35";
-  const dashOffset = RING_CIRC * (1 - ratio);
+  const isCheckbox = currentItem?.itemType === "checkbox";
+  const isStopwatch = currentItem?.itemType === "stopwatch";
+  const isCountdown = !isCheckbox && !isStopwatch;
 
+  const target = isCountdown ? (currentItem?.projectedMinutes ?? 0) * 60 : 0;
+  const isOver = isCountdown && target > 0 && elapsed >= target;
+
+  // Don't run the clock for checkbox items — there's nothing to time
   useEffect(() => {
-    if (isRunning && phase === "running") {
+    if (isRunning && phase === "running" && !isCheckbox) {
       intervalRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isRunning, phase]);
+  }, [isRunning, phase, isCheckbox]);
+
+  // Reset timer state whenever we move to a new item
+  useEffect(() => {
+    setElapsed(0);
+    setIsRunning(true);
+  }, [currentIndex]);
 
   const saveLog = useCallback(
     async (itemId: string, state: LogState, actualMinutes: number) => {
@@ -78,8 +87,6 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
       const nextIndex = currentIndex + 1;
       if (nextIndex < items.length) {
         setCurrentIndex(nextIndex);
-        setElapsed(0);
-        setIsRunning(true);
       } else {
         setPhase("summary");
         setIsRunning(false);
@@ -88,14 +95,21 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
     [currentItem, currentIndex, items.length, saveLog]
   );
 
-  const handleDone = () => advance("done", Math.max(1, Math.round(elapsed / 60)));
+  const handleDone = () => {
+    if (isCheckbox) {
+      advance("done", 0);
+    } else {
+      advance("done", Math.max(1, Math.round(elapsed / 60)));
+    }
+  };
   const handleMissed = () => advance("missed", 0);
   const handleRest = () => advance("rest", 0);
 
-  // ── Summary screen ──────────────────────────────────────────────────────
+  // ── Summary ─────────────────────────────────────────────────────────────────
   if (phase === "summary") {
     const totalActual = sessionLogs.reduce((s, l) => s + l.actualMinutes, 0);
-    const totalProjected = items.reduce((s, i) => s + i.projectedMinutes, 0);
+    const timedItems = items.filter((i) => i.itemType !== "checkbox");
+    const totalProjected = timedItems.reduce((s, i) => s + i.projectedMinutes, 0);
     const doneCount = sessionLogs.filter((l) => l.state === "done").length;
     const logMap = Object.fromEntries(sessionLogs.map((l) => [l.itemId, l]));
 
@@ -111,10 +125,12 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
                 <p className="font-mono text-2xl text-text">{totalActual}m</p>
                 <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">actual</p>
               </div>
-              <div>
-                <p className="font-mono text-2xl text-muted">{totalProjected}m</p>
-                <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">projected</p>
-              </div>
+              {totalProjected > 0 && (
+                <div>
+                  <p className="font-mono text-2xl text-muted">{totalProjected}m</p>
+                  <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">projected</p>
+                </div>
+              )}
               <div>
                 <p className="font-mono text-2xl text-text">{doneCount}/{items.length}</p>
                 <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">completed</p>
@@ -126,14 +142,19 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
             {items.map((item) => {
               const log = logMap[item._id];
               if (!log) return null;
-              const variance = log.state === "done" ? log.actualMinutes - item.projectedMinutes : null;
+              const isItemCheckbox = item.itemType === "checkbox";
+              const isItemStopwatch = item.itemType === "stopwatch";
+              const variance =
+                log.state === "done" && !isItemCheckbox && !isItemStopwatch
+                  ? log.actualMinutes - item.projectedMinutes
+                  : null;
               return (
                 <div key={item._id} className="flex items-center gap-3 px-4 py-3">
                   <div className="w-7 flex items-center justify-center flex-shrink-0">
                     <HabitIcon name={item.icon} size={16} className="text-muted" />
                   </div>
                   <span className="flex-1 font-body text-sm text-text truncate">{item.name}</span>
-                  {log.state === "done" && (
+                  {log.state === "done" && log.actualMinutes > 0 && (
                     <span className="font-mono text-xs text-muted mr-1">{log.actualMinutes}m</span>
                   )}
                   {variance !== null && (
@@ -151,10 +172,7 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
         </div>
 
         <div className="px-4 py-4 flex-shrink-0 border-t border-border">
-          <button
-            onClick={onFinish}
-            className="w-full py-4 rounded-card bg-olive text-text font-body font-medium"
-          >
+          <button onClick={onFinish} className="w-full py-4 rounded-card bg-olive text-text font-body font-medium">
             Finish
           </button>
         </div>
@@ -162,95 +180,146 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
     );
   }
 
-  // ── Running screen ──────────────────────────────────────────────────────
-  const timeDisplay = isOver
-    ? `+${fmtMins(elapsed - target)}`
-    : fmtMins(target - elapsed);
-
+  // ── Running ──────────────────────────────────────────────────────────────────
   const loggedIds = new Set(sessionLogs.map((l) => l.itemId));
+
+  // Countdown ring values
+  const countdownRatio = isCountdown && target > 0 ? Math.min(elapsed / target, 1) : 0;
+  const countdownColor = isOver ? "#7a2e2e" : countdownRatio >= 0.75 ? "#c47a2a" : "#5a6b35";
+  const countdownOffset = RING_CIRC * (1 - countdownRatio);
+  const countdownDisplay = isOver ? `+${fmtMins(elapsed - target)}` : fmtMins(target - elapsed);
+
+  // Stopwatch ring values
+  const stopwatchRatio = isStopwatch ? Math.min(elapsed / STOPWATCH_SOFT_CAP, 1) : 0;
+  const stopwatchOffset = RING_CIRC * (1 - stopwatchRatio);
 
   return (
     <div className="fixed inset-0 bg-bg z-50 flex flex-col max-w-mobile mx-auto">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-10 pb-2 flex-shrink-0">
-        <button
-          onClick={onClose}
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-card text-dim"
-        >
+        <button onClick={onClose} className="flex items-center justify-center w-9 h-9 rounded-full bg-card text-dim">
           <X size={16} />
         </button>
-        <span className="font-mono text-muted text-sm">
-          {currentIndex + 1} of {items.length}
-        </span>
+        <span className="font-mono text-muted text-sm">{currentIndex + 1} of {items.length}</span>
       </div>
 
-      {/* Current item info */}
+      {/* Item info */}
       <div className="text-center px-4 pt-2 pb-3 flex-shrink-0">
         <div className="flex justify-center mb-3">
           <HabitIcon name={currentItem.icon} size={44} strokeWidth={1.25} className="text-text" />
         </div>
         <h2 className="font-heading text-xl text-text leading-tight">{currentItem.name}</h2>
-        <p className="font-mono text-dim text-xs mt-1">{currentItem.projectedMinutes}m target</p>
+        {isCountdown && (
+          <p className="font-mono text-dim text-xs mt-1">{currentItem.projectedMinutes}m target</p>
+        )}
+        {isStopwatch && (
+          <p className="font-mono text-dim text-xs mt-1">stopwatch · no target</p>
+        )}
+        {isCheckbox && (
+          <p className="font-mono text-dim text-xs mt-1">mark when done</p>
+        )}
       </div>
 
-      {/* Ring timer */}
-      <div className="flex justify-center flex-shrink-0 pb-3">
-        <div className="relative w-44 h-44">
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-            <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#2e2c22" strokeWidth="9" />
-            <circle
-              cx="80" cy="80" r={RING_R}
-              fill="none"
-              stroke={ringColor}
-              strokeWidth="9"
-              strokeLinecap="round"
-              strokeDasharray={RING_CIRC}
-              strokeDashoffset={dashOffset}
-              style={{ transition: "stroke-dashoffset 0.95s linear, stroke 0.4s ease" }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span
-              className="font-mono text-3xl font-semibold leading-none"
-              style={{ color: isOver ? "#a03a3a" : "#e8e0cc" }}
-            >
-              {timeDisplay}
-            </span>
-            <span className="font-mono text-[10px] text-dim mt-1">
-              {isOver ? "over" : "remaining"}
-            </span>
+      {/* ── Checkbox: big done button instead of ring ── */}
+      {isCheckbox && (
+        <div className="flex-1 flex items-center justify-center px-4">
+          <button
+            onClick={handleDone}
+            className="w-44 h-44 rounded-full bg-olive/10 border-2 border-olive/40 flex flex-col items-center justify-center gap-2 active:bg-olive/20 transition-colors"
+          >
+            <span className="text-4xl text-olive">✓</span>
+            <span className="font-body text-sm text-olive font-medium">Done</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── Countdown ring ── */}
+      {isCountdown && (
+        <div className="flex justify-center flex-shrink-0 pb-3">
+          <div className="relative w-44 h-44">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#2e2c22" strokeWidth="9" />
+              <circle
+                cx="80" cy="80" r={RING_R}
+                fill="none"
+                stroke={countdownColor}
+                strokeWidth="9"
+                strokeLinecap="round"
+                strokeDasharray={RING_CIRC}
+                strokeDashoffset={countdownOffset}
+                style={{ transition: "stroke-dashoffset 0.95s linear, stroke 0.4s ease" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-mono text-3xl font-semibold leading-none" style={{ color: isOver ? "#a03a3a" : "#e8e0cc" }}>
+                {countdownDisplay}
+              </span>
+              <span className="font-mono text-[10px] text-dim mt-1">{isOver ? "over" : "remaining"}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Stopwatch ring ── */}
+      {isStopwatch && (
+        <div className="flex justify-center flex-shrink-0 pb-3">
+          <div className="relative w-44 h-44">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#2e2c22" strokeWidth="9" />
+              <circle
+                cx="80" cy="80" r={RING_R}
+                fill="none"
+                stroke="#5a6b35"
+                strokeWidth="9"
+                strokeLinecap="round"
+                strokeDasharray={RING_CIRC}
+                strokeDashoffset={stopwatchOffset}
+                style={{ transition: "stroke-dashoffset 0.95s linear" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-mono text-3xl font-semibold leading-none text-text">
+                {fmtMins(elapsed)}
+              </span>
+              <span className="font-mono text-[10px] text-dim mt-1">elapsed</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="px-4 pb-4 flex-shrink-0 space-y-2">
-        <button
-          onClick={handleDone}
-          className="w-full py-3 rounded-card bg-olive text-text font-body font-medium"
-        >
-          Done · log {Math.max(1, Math.round(elapsed / 60))}m
-        </button>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsRunning((r) => !r)}
-            className="flex-1 py-2.5 rounded-card border border-border-light text-muted font-body text-sm min-h-[44px]"
-          >
-            {isRunning ? "Pause" : "Resume"}
-          </button>
-          <button
-            onClick={handleMissed}
-            className="flex-1 py-2.5 rounded-card border border-burgundy/30 text-burgundy-light font-body text-sm min-h-[44px]"
-          >
-            ✗ Missed
-          </button>
-          <button
-            onClick={handleRest}
-            className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-muted font-body text-sm min-h-[44px]"
-          >
-            ~ Rest
-          </button>
-        </div>
+        {/* Checkbox: just missed + rest (done is the big button above) */}
+        {isCheckbox ? (
+          <div className="flex gap-2">
+            <button onClick={handleMissed} className="flex-1 py-2.5 rounded-card border border-burgundy/30 text-burgundy-light font-body text-sm min-h-[44px]">
+              ✗ Missed
+            </button>
+            <button onClick={handleRest} className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-muted font-body text-sm min-h-[44px]">
+              ~ Rest
+            </button>
+          </div>
+        ) : (
+          <>
+            <button onClick={handleDone} className="w-full py-3 rounded-card bg-olive text-text font-body font-medium">
+              Done · log {Math.max(1, Math.round(elapsed / 60))}m
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsRunning((r) => !r)}
+                className="flex-1 py-2.5 rounded-card border border-border-light text-muted font-body text-sm min-h-[44px]"
+              >
+                {isRunning ? "Pause" : "Resume"}
+              </button>
+              <button onClick={handleMissed} className="flex-1 py-2.5 rounded-card border border-burgundy/30 text-burgundy-light font-body text-sm min-h-[44px]">
+                ✗ Missed
+              </button>
+              <button onClick={handleRest} className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-muted font-body text-sm min-h-[44px]">
+                ~ Rest
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Divider */}
@@ -264,54 +333,31 @@ export default function RoutineSession({ groupName, items, today, onClose, onFin
             const isCurrent = i === currentIndex;
             const isDone = loggedIds.has(item._id);
             const isUpcoming = !isDone && !isCurrent;
+            const isItemCheckbox = item.itemType === "checkbox";
+            const isItemStopwatch = item.itemType === "stopwatch";
 
             return (
               <div
                 key={item._id}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors ${
-                  isCurrent
-                    ? "bg-olive/10 border border-olive/20"
-                    : isDone
-                    ? "opacity-60"
-                    : isUpcoming
-                    ? "opacity-40"
-                    : ""
+                  isCurrent ? "bg-olive/10 border border-olive/20" : isDone ? "opacity-60" : isUpcoming ? "opacity-40" : ""
                 }`}
               >
                 <div className="w-6 flex items-center justify-center flex-shrink-0">
-                  <HabitIcon
-                    name={item.icon}
-                    size={15}
-                    strokeWidth={1.75}
-                    className={isCurrent ? "text-olive" : "text-dim"}
-                  />
+                  <HabitIcon name={item.icon} size={15} strokeWidth={1.75} className={isCurrent ? "text-olive" : "text-dim"} />
                 </div>
-                <span
-                  className={`flex-1 font-body text-sm ${
-                    isCurrent ? "text-text font-medium" : "text-muted"
-                  } ${log && "line-through"}`}
-                >
+                <span className={`flex-1 font-body text-sm ${isCurrent ? "text-text font-medium" : "text-muted"} ${log ? "line-through" : ""}`}>
                   {item.name}
                 </span>
                 <span className="font-mono text-dim text-xs flex-shrink-0">
-                  {item.projectedMinutes}m
+                  {isItemCheckbox ? "✓" : isItemStopwatch ? "⏱" : `${item.projectedMinutes}m`}
                 </span>
                 {log && (
-                  <span
-                    className={`font-mono text-xs flex-shrink-0 ml-1 ${
-                      log.state === "done"
-                        ? "text-olive"
-                        : log.state === "missed"
-                        ? "text-burgundy-light"
-                        : "text-blue-muted"
-                    }`}
-                  >
+                  <span className={`font-mono text-xs flex-shrink-0 ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : "text-blue-muted"}`}>
                     {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : "~"}
                   </span>
                 )}
-                {isCurrent && !log && (
-                  <ChevronRight size={14} className="text-olive flex-shrink-0" />
-                )}
+                {isCurrent && !log && <ChevronRight size={14} className="text-olive flex-shrink-0" />}
               </div>
             );
           })}

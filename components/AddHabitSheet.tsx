@@ -17,7 +17,7 @@ interface Template {
 interface Props {
   groupId: string;
   groupName: string;
-  onAdd: (templateId: string | null, name: string, icon: string, projectedMinutes: number, itemType: "standard" | "checkbox") => Promise<void>;
+  onAdd: (templateId: string | null, name: string, icon: string, projectedMinutes: number, itemType: "standard" | "stopwatch" | "checkbox") => Promise<void>;
   onClose: () => void;
 }
 
@@ -43,7 +43,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
   const [customIcon, setCustomIcon] = useState("star");
   const [customName, setCustomName] = useState("");
   const [customMins, setCustomMins] = useState("15");
-  const [customType, setCustomType] = useState<"standard" | "checkbox">("standard");
+  const [customType, setCustomType] = useState<"standard" | "stopwatch" | "checkbox">("standard");
   const [saving, setSaving] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -86,7 +86,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
       body: JSON.stringify({
         name: customName.trim(),
         icon: customIcon,
-        defaultProjectedMinutes: customType === "checkbox" ? 0 : (parseInt(customMins) || 15),
+        defaultProjectedMinutes: customType === "standard" ? (parseInt(customMins) || 15) : 0,
         category: "custom",
         timeOfDay: "any",
       }),
@@ -219,7 +219,16 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                         customType === "standard" ? "bg-olive text-text" : "text-dim"
                       }`}
                     >
-                      ▶ Timed
+                      ▶ Countdown
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCustomType("stopwatch")}
+                      className={`flex-1 py-2 rounded-card font-mono text-xs transition-colors ${
+                        customType === "stopwatch" ? "bg-olive text-text" : "text-dim"
+                      }`}
+                    >
+                      ⏱ Stopwatch
                     </button>
                     <button
                       type="button"
@@ -233,8 +242,10 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                   </div>
                   <p className="font-mono text-[9px] text-dim mt-1.5">
                     {customType === "standard"
-                      ? "Starts a timer. Tracks projected vs actual time."
-                      : "Tap to mark done. No timer. Simple ✓/✗ tracking."}
+                      ? "Set a target. Timer counts down. Tracks projected vs actual."
+                      : customType === "stopwatch"
+                      ? "No target. Counts up. Builds a picture of how long things actually take."
+                      : "No timer. Tap to mark done. Simple ✓/✗ tracking."}
                   </p>
                 </div>
 
@@ -261,7 +272,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                 </div>
 
                 {/* Time — timed only */}
-                {customType === "standard" && (
+                {customType === "standard" && ( // minutes only for countdown
                   <div>
                     <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
                       Target minutes

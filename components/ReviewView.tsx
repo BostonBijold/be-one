@@ -6,6 +6,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import VirtueCheckInModal from "@/components/VirtueCheckInModal";
 import WeeklyReviewModal from "@/components/WeeklyReviewModal";
+import VirtuesHowItWorks from "@/components/VirtuesHowItWorks";
 
 interface VirtueRow {
   virtueId: string;
@@ -49,6 +50,7 @@ interface Props {
   initialDate: string | null;
   returnTo: string | null;
   hasCheckedInToday: boolean;
+  virtueWalkthroughSeen: boolean;
 }
 
 function fmtDateRange(dates: string[]) {
@@ -62,6 +64,7 @@ export default function ReviewView({
   userName, today, skipAuth,
   currentVirtue, checkinItemId, weeklyReviewItemId,
   initialMode, initialDate, returnTo, hasCheckedInToday,
+  virtueWalkthroughSeen,
 }: Props) {
   const router = useRouter();
   const [days, setDays] = useState<7 | 30>(7);
@@ -101,7 +104,7 @@ export default function ReviewView({
     setMode("history");
     loadSummary(days);
     if (returnTo === "routines") router.push("/routines");
-    else router.replace("/review");
+    else router.replace("/virtues");
   }, [returnTo, router, loadSummary, days]);
 
   return (
@@ -115,7 +118,7 @@ export default function ReviewView({
             setCheckedInToday(true);
             exitFlow();
           }}
-          onClose={() => { setMode("history"); router.replace("/review"); }}
+          onClose={() => { setMode("history"); router.replace("/virtues"); }}
         />
       )}
 
@@ -127,7 +130,7 @@ export default function ReviewView({
             await markDone(weeklyReviewItemId, activeDate, mins);
             exitFlow();
           }}
-          onClose={() => { setMode("history"); router.replace("/review"); }}
+          onClose={() => { setMode("history"); router.replace("/virtues"); }}
         />
       )}
 
@@ -157,9 +160,12 @@ export default function ReviewView({
           <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">
             Franklin Review
           </p>
-          <h1 className="font-heading text-2xl italic text-text">
-            Virtues
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="font-heading text-2xl italic text-text">
+              Virtues
+            </h1>
+            <VirtuesHowItWorks autoOpen={!virtueWalkthroughSeen} />
+          </div>
           <p className="font-mono text-[10px] text-dim mt-2">
             Daily YES / NO, tap a virtue to read more
           </p>

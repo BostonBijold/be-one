@@ -15,7 +15,7 @@ const LEFT_TABS = [
 ];
 const RIGHT_TABS = [
   { href: "/analytics", label: "Analytics", Icon: BarChart3 },
-  { href: "/review",    label: "Virtues",   Icon: ScrollText },
+  { href: "/virtues",   label: "Virtues",   Icon: ScrollText },
 ];
 
 // Radial layout: 3 bubbles at 130° / 90° / 50° from the horizontal axis.
@@ -118,7 +118,7 @@ export default function BottomNav() {
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? "Close" : "Quick add"}
             className={`absolute left-1/2 -translate-x-1/2 -top-6 z-10 w-14 h-14 rounded-full border-4 border-bg shadow-lg flex items-center justify-center transition-all duration-200 ${
-              open ? "bg-card-hover rotate-0" : "bg-olive"
+              open ? "bg-card-hover" : "bg-text"
             }`}
           >
             {open ? (
@@ -127,9 +127,8 @@ export default function BottomNav() {
               <Image
                 src="/logo.png"
                 alt=""
-                width={28}
-                height={28}
-                style={{ filter: "invert(1)", opacity: 0.9 }}
+                width={30}
+                height={30}
                 priority
               />
             )}

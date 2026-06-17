@@ -1,0 +1,15 @@
+import { Schema, model, models } from "mongoose";
+
+// Extends the NextAuth MongoDBAdapter `users` collection with app-specific fields.
+// Do not redeclare fields the adapter owns (email, name, image, emailVerified).
+const UserSchema = new Schema(
+  {
+    virtueWalkthroughSeen: { type: Boolean, default: false },
+  },
+  {
+    strict: false, // allow adapter-owned fields to coexist without declaring them
+    timestamps: true,
+  }
+);
+
+export default models.User || model("User", UserSchema);

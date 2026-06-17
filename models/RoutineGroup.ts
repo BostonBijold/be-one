@@ -4,8 +4,7 @@ export interface IRoutineGroup extends Document {
   userId: string | null;
   name: string;
   timeOfDay: "morning" | "evening" | "custom" | "habit";
-  startTime: string | null;    // 'HH:MM' — when routine window opens
-  collapseAfter: string | null; // 'HH:MM' — when routine window closes
+  startTime: string | null;    // 'HH:MM' — when routine window opens (end is derived from projected mins)
   order: number;
   isDefault: boolean;
 }
@@ -16,7 +15,6 @@ const RoutineGroupSchema = new Schema<IRoutineGroup>(
     name: { type: String, required: true },
     timeOfDay: { type: String, enum: ["morning", "evening", "custom", "habit"], required: true },
     startTime: { type: String, default: null },
-    collapseAfter: { type: String, default: null },
     order: { type: Number, default: 0 },
     isDefault: { type: Boolean, default: false },
   },

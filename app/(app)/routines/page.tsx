@@ -58,7 +58,7 @@ export default async function RoutinesPage({
   );
   await RoutineGroup.updateOne(
     { userId, name: "Afternoon Routine", startTime: { $in: [null, undefined] } },
-    { $set: { startTime: "12:00", collapseAfter: "17:00" } }
+    { $set: { startTime: "12:00" } }
   );
 
   // Current virtue
@@ -100,7 +100,6 @@ export default async function RoutinesPage({
         name: group.name,
         timeOfDay: group.timeOfDay as "morning" | "evening" | "custom" | "habit",
         startTime: group.startTime ?? null,
-        collapseAfter: group.collapseAfter ?? null,
         order: group.order,
         items: items.map((item) => ({
           _id: item._id.toString(),

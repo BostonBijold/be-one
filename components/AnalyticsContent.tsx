@@ -66,15 +66,15 @@ function dayLabel(dateStr: string): string {
 
 function barColor(pct: number, hasLogs: boolean): string {
   if (!hasLogs) return "#2e2c22";
-  if (pct >= 1)    return "#5a6b35";
-  if (pct >= 0.75) return "#7a9248";
+  if (pct >= 1)    return "#c4a84a"; // gold — perfect day
+  if (pct >= 0.75) return "#7a9248"; // new olive
   if (pct >= 0.5)  return "#c47a2a";
   if (pct > 0)     return "#8b5a2b";
   return "#7a2e2e";
 }
 
 function completionBarColor(pct: number): string {
-  if (pct >= 0.8) return "#5a6b35";
+  if (pct >= 0.8) return "#c4a84a"; // gold — strong performance
   if (pct >= 0.5) return "#c47a2a";
   return "#7a2e2e";
 }
@@ -125,10 +125,11 @@ function HabitRow({ habit }: { habit: HabitStats }) {
   const pct = habit.completionRate;
   const pctDisplay = Math.round(pct * 100);
   const isCheckbox = habit.itemType === "checkbox";
+  const isStopwatch = habit.itemType === "stopwatch";
   const varianceColor =
     habit.avgVariance === null ? "text-dim"
     : habit.avgVariance > 5   ? "text-tobacco"
-    : habit.avgVariance < -5  ? "text-olive-light"
+    : habit.avgVariance < -5  ? "text-gold"
     : "text-dim";
 
   return (
@@ -138,8 +139,11 @@ function HabitRow({ habit }: { habit: HabitStats }) {
           <HabitIcon name={habit.icon} size={14} strokeWidth={1.75} className="text-muted" />
         </div>
         <span className="flex-1 font-body text-sm text-text leading-tight">{habit.name}</span>
-        {!isCheckbox && (
+        {!isCheckbox && !isStopwatch && (
           <span className="font-mono text-[10px] text-dim flex-shrink-0">{habit.projectedMinutes}m proj</span>
+        )}
+        {isStopwatch && habit.avgActualMins !== null && (
+          <span className="font-mono text-[10px] text-muted flex-shrink-0">{habit.avgActualMins}m avg</span>
         )}
       </div>
 
@@ -154,9 +158,9 @@ function HabitRow({ habit }: { habit: HabitStats }) {
         {habit.unloggedCount > 0 && (
           <span className="font-mono text-xs text-dim">{habit.unloggedCount} unlogged</span>
         )}
-        {!isCheckbox && habit.avgActualMins !== null && (
+        {!isCheckbox && !isStopwatch && habit.avgActualMins !== null && (
           <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
-            <span className="font-mono text-xs text-muted">{habit.avgActualMins}m avg</span>
+            <span className="font-mono text-xs text-text">{habit.avgActualMins}m avg</span>
             {habit.avgVariance !== null && habit.avgVariance !== 0 && (
               <span className={`font-mono text-xs font-medium ${varianceColor}`}>
                 {habit.avgVariance > 0 ? `+${habit.avgVariance}m` : `${habit.avgVariance}m`}
@@ -290,13 +294,13 @@ export default function AnalyticsContent() {
                       <span className="font-mono text-dim text-xs">→</span>
                       {group.avgActualMins > 0 ? (
                         <>
-                          <span className="font-mono text-xs text-muted">
+                          <span className="font-mono text-xs text-text">
                             {fmtMins(group.avgActualMins)} actual avg
                           </span>
                           {variance !== 0 && (
                             <span
-                              className="font-mono text-[10px] ml-auto"
-                              style={{ color: variance > 0 ? "#8b5a2b" : "#7a9248" }}
+                              className="font-mono text-[10px] ml-auto font-medium"
+                              style={{ color: variance > 0 ? "#8b5a2b" : "#c4a84a" }}
                             >
                               {variance > 0 ? `+${fmtMins(variance)}` : `-${fmtMins(Math.abs(variance))}`}
                             </span>

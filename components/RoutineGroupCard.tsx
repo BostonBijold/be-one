@@ -14,7 +14,6 @@ export interface GroupCardGroup {
   name: string;
   timeOfDay: "morning" | "evening" | "custom" | "habit";
   startTime: string | null;
-  collapseAfter: string | null;
   order: number;
   items: RowItem[];
 }
@@ -47,6 +46,13 @@ function minutesNow(): number {
 function toMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
+}
+
+// Derive end time from startTime + total projected minutes of timed items
+function deriveCollapseAfter(startTime: string | null, projectedMins: number): string | null {
+  if (!startTime || projectedMins <= 0) return null;
+  const total = toMinutes(startTime) + projectedMins;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
 function isPastWindow(collapseAfter: string | null): boolean {
@@ -101,17 +107,22 @@ export default function RoutineGroupCard({
   onStateChange, onStartTimer, onStartRoutine,
   onOpenCheckIn, onOpenReview,
 }: Props) {
+  // Derive end time once we know what items are in this group
+  const timedItemsAll = group.items.filter((i) => i.itemType !== "checkbox");
+  const totalProjectedMins = timedItemsAll.reduce((s, i) => s + i.projectedMinutes, 0);
+  const collapseAfter = deriveCollapseAfter(group.startTime, totalProjectedMins);
+
   const beforeWindow = useMemo(
     () => !isPastDate && isBeforeWindow(group.startTime),
     [group.startTime, isPastDate]
   );
   const pastTimeframe = useMemo(
-    () => !isPastDate && isPastWindow(group.collapseAfter),
-    [group.collapseAfter, isPastDate]
+    () => !isPastDate && isPastWindow(collapseAfter),
+    [collapseAfter, isPastDate]
   );
   const inWindow = useMemo(
-    () => !isPastDate && isInWindow(group.startTime, group.collapseAfter),
-    [group.startTime, group.collapseAfter, isPastDate]
+    () => !isPastDate && isInWindow(group.startTime, collapseAfter),
+    [group.startTime, collapseAfter, isPastDate]
   );
 
   const visibleItems = useMemo(
@@ -173,15 +184,16 @@ export default function RoutineGroupCard({
             </span>
           ) : pastTimeframe && !isComplete ? (
             <span className="font-mono text-[10px] text-dim px-2 py-0.5 rounded-pill border border-border">
-              by {group.collapseAfter ? fmtTime(group.collapseAfter) : "—"}
+              {collapseAfter ? `by ${fmtTime(collapseAfter)}` : "window passed"}
             </span>
           ) : null}
         </button>
 
         <div className="flex items-center gap-3">
           {!isComplete && (
-            <span className="font-mono text-dim text-xs">
-              {doneCount}/{visibleItems.length} · {fmtMins(projectedMins)}
+            <span className="font-mono text-xs">
+              <span className="text-gold">{doneCount}/{visibleItems.length}</span>
+              <span className="text-dim"> · {fmtMins(projectedMins)}</span>
             </span>
           )}
           <Link
@@ -257,9 +269,9 @@ export default function RoutineGroupCard({
             <span className="ml-auto font-mono text-dim text-xs">
               starts {fmtTime(group.startTime)}
             </span>
-          ) : group.collapseAfter ? (
+          ) : collapseAfter ? (
             <span className="ml-auto font-mono text-dim text-xs">
-              by {fmtTime(group.collapseAfter)}
+              by {fmtTime(collapseAfter)}
             </span>
           ) : null}
         </button>

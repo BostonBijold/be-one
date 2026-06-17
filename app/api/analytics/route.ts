@@ -102,11 +102,13 @@ export async function GET(req: NextRequest) {
     const restCount = daily.filter((d) => d.state === "rest").length;
 
     const isCheckbox = item.itemType === "checkbox";
+    const isStopwatch = item.itemType === "stopwatch";
     const avgActualMins =
       !isCheckbox && doneDays.length > 0
         ? Math.round(doneDays.reduce((s, d) => s + (d.actualMinutes ?? item.projectedMinutes), 0) / doneDays.length)
         : null;
-    const avgVariance = avgActualMins !== null ? avgActualMins - item.projectedMinutes : null;
+    // Stopwatch has no target — actual time IS the data, but variance is meaningless
+    const avgVariance = avgActualMins !== null && !isStopwatch ? avgActualMins - item.projectedMinutes : null;
 
     const engagedDays = doneCount + missedCount; // rest and unlogged don't count
     return {
@@ -126,7 +128,7 @@ export async function GET(req: NextRequest) {
       completionRate: engagedDays > 0 ? doneCount / engagedDays : 0,
       engagedDays,
       totalDays: dates.length,
-      itemType: item.itemType ?? "standard",
+      itemType: (item.itemType ?? "standard") as string,
     };
   });
 

@@ -40,7 +40,6 @@ export default async function EditRoutinePage({
         _id: group._id.toString(),
         name: group.name,
         startTime: group.startTime ?? null,
-        collapseAfter: group.collapseAfter ?? null,
       }}
       items={items.map((i) => ({
         _id: i._id.toString(),
@@ -48,7 +47,7 @@ export default async function EditRoutinePage({
         icon: i.icon,
         projectedMinutes: i.projectedMinutes,
         order: i.order,
-        itemType: (i.itemType ?? "standard") as "standard" | "checkbox",
+        itemType: (i.itemType ?? "standard") as "standard" | "stopwatch" | "checkbox",
       }))}
     />
   );

@@ -198,7 +198,7 @@ export default function RoutinesView({
       name: string,
       icon: string,
       projectedMinutes: number,
-      itemType: "standard" | "checkbox" = "standard"
+      itemType: "standard" | "stopwatch" | "checkbox" = "standard"
     ) => {
       if (!addHabitGroup) return;
       await fetch("/api/routine-items", {
@@ -344,7 +344,7 @@ export default function RoutinesView({
                   onStartTimer={(item) => setTimerItem(item)}
                   onStartRoutine={(g) => setActiveSession({ group: g })}
                   onOpenCheckIn={(item) => setCheckInItem(item)}
-                  onOpenReview={() => router.push(`/review?mode=weekly&date=${selectedDate}&return=routines`)}
+                  onOpenReview={() => router.push(`/virtues?mode=weekly&date=${selectedDate}&return=routines`)}
                 />
               ))}
             </div>
@@ -382,7 +382,7 @@ export default function RoutinesView({
                       onStartTimer={(item) => setTimerItem(item)}
                       onStartRoutine={() => {}}
                       onOpenCheckIn={(item) => setCheckInItem(item)}
-                      onOpenReview={() => router.push(`/review?mode=weekly&date=${selectedDate}&return=routines`)}
+                      onOpenReview={() => router.push(`/virtues?mode=weekly&date=${selectedDate}&return=routines`)}
                     />
                   ))}
                 </div>

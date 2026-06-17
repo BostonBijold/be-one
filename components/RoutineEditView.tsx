@@ -31,11 +31,11 @@ export interface EditItem {
   icon: string;
   projectedMinutes: number;
   order: number;
-  itemType: "standard" | "checkbox";
+  itemType: "standard" | "stopwatch" | "checkbox";
 }
 
 interface Props {
-  group: { _id: string; name: string; startTime: string | null; collapseAfter: string | null };
+  group: { _id: string; name: string; startTime: string | null };
   items: EditItem[];
 }
 
@@ -51,7 +51,7 @@ function SortableRow({
   item: EditItem;
   isEditing: boolean;
   onToggleEdit: () => void;
-  onSave: (name: string, icon: string, projectedMinutes: number, itemType: "standard" | "checkbox") => Promise<void>;
+  onSave: (name: string, icon: string, projectedMinutes: number, itemType: "standard" | "stopwatch" | "checkbox") => Promise<void>;
   onRemove: () => Promise<void>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -67,12 +67,12 @@ function SortableRow({
   const [editName, setEditName] = useState(item.name);
   const [editIcon, setEditIcon] = useState(item.icon);
   const [editMins, setEditMins] = useState(String(item.projectedMinutes));
-  const [editType, setEditType] = useState<"standard" | "checkbox">(item.itemType);
+  const [editType, setEditType] = useState<"standard" | "stopwatch" | "checkbox">(item.itemType);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
-    const mins = editType === "checkbox" ? 0 : (parseInt(editMins) || item.projectedMinutes);
+    const mins = editType === "standard" ? (parseInt(editMins) || item.projectedMinutes) : 0;
     await onSave(editName.trim() || item.name, editIcon || item.icon, mins, editType);
     setSaving(false);
   };
@@ -133,7 +133,16 @@ function SortableRow({
                   editType === "standard" ? "bg-olive text-text" : "text-dim"
                 }`}
               >
-                ▶ Timed
+                ▶ Countdown
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditType("stopwatch")}
+                className={`flex-1 py-1.5 rounded-card font-mono text-xs transition-colors ${
+                  editType === "stopwatch" ? "bg-olive text-text" : "text-dim"
+                }`}
+              >
+                ⏱ Stopwatch
               </button>
               <button
                 type="button"
@@ -205,7 +214,6 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
 
   // Group schedule state
   const [startTime, setStartTime] = useState(group.startTime ?? "");
-  const [endTime, setEndTime] = useState(group.collapseAfter ?? "");
   const [scheduleChanged, setScheduleChanged] = useState(false);
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [scheduleSaved, setScheduleSaved] = useState(false);
@@ -215,7 +223,7 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
     await fetch(`/api/routines/${group._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startTime: startTime || null, collapseAfter: endTime || null }),
+      body: JSON.stringify({ startTime: startTime || null }),
     });
     setSavingSchedule(false);
     setScheduleChanged(false);
@@ -245,7 +253,7 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
     });
   };
 
-  const handleSaveItem = async (id: string, name: string, icon: string, projectedMinutes: number, itemType: "standard" | "checkbox") => {
+  const handleSaveItem = async (id: string, name: string, icon: string, projectedMinutes: number, itemType: "standard" | "stopwatch" | "checkbox") => {
     setItems((prev) =>
       prev.map((it) => (it._id === id ? { ...it, name, icon, projectedMinutes, itemType } : it))
     );
@@ -255,11 +263,13 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, icon, projectedMinutes, itemType }),
     });
+    router.refresh(); // invalidate routines page cache
   };
 
   const handleRemove = async (id: string) => {
     setItems((prev) => prev.filter((it) => it._id !== id));
     await fetch(`/api/routine-items/${id}`, { method: "DELETE" });
+    router.refresh();
   };
 
   const handleAdd = async (
@@ -267,15 +277,28 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
     name: string,
     icon: string,
     projectedMinutes: number,
-    itemType: "standard" | "checkbox" = "standard"
+    itemType: "standard" | "stopwatch" | "checkbox" = "standard"
   ) => {
-    await fetch("/api/routine-items", {
+    const res = await fetch("/api/routine-items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ groupId: group._id, templateId, name, icon, projectedMinutes, itemType }),
     });
+    const newItem = await res.json();
+    // Push directly into local state — don't wait for a server round-trip
+    setItems((prev) => [
+      ...prev,
+      {
+        _id: newItem._id,
+        name: newItem.name,
+        icon: newItem.icon,
+        projectedMinutes: newItem.projectedMinutes,
+        itemType: (newItem.itemType ?? "standard") as "standard" | "stopwatch" | "checkbox",
+        order: prev.length,
+      },
+    ]);
     setShowAddSheet(false);
-    router.refresh();
+    router.refresh(); // invalidate routines page cache for when user navigates back
   };
 
   const totalMins = items.filter((i) => i.itemType !== "checkbox").reduce((s, i) => s + i.projectedMinutes, 0);
@@ -307,8 +330,8 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
             Time Window
           </p>
           <div className="flex gap-3 mb-3">
-            <div className="flex-1">
-              <label className="font-mono text-[10px] text-dim block mb-1.5">Start</label>
+            <div className="w-40">
+              <label className="font-mono text-[10px] text-dim block mb-1.5">Start time</label>
               <input
                 type="time"
                 value={startTime}
@@ -316,19 +339,10 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
                 className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text outline-none focus:border-olive"
               />
             </div>
-            <div className="flex-1">
-              <label className="font-mono text-[10px] text-dim block mb-1.5">End</label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => { setEndTime(e.target.value); setScheduleChanged(true); setScheduleSaved(false); }}
-                className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text outline-none focus:border-olive"
-              />
-            </div>
           </div>
-          {startTime && endTime && (
+          {startTime && (
             <p className="font-mono text-[10px] text-dim mb-3">
-              Expands at {startTime} · collapses after {endTime}
+              Opens at {startTime} · closes after all habits are done
             </p>
           )}
           {scheduleChanged && (

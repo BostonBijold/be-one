@@ -16,7 +16,6 @@ export async function seedDefaultRoutines(userId: string) {
     name: "Morning Routine",
     timeOfDay: "morning",
     startTime: "06:00",
-    collapseAfter: "10:00",
     order: 0,
     isDefault: true,
   });
@@ -27,7 +26,6 @@ export async function seedDefaultRoutines(userId: string) {
     name: "Afternoon Routine",
     timeOfDay: "custom",
     startTime: "12:00",
-    collapseAfter: "17:00",
     order: 1,
     isDefault: true,
   });
@@ -37,7 +35,6 @@ export async function seedDefaultRoutines(userId: string) {
     name: "Evening Routine",
     timeOfDay: "evening",
     startTime: "18:00",
-    collapseAfter: "22:00",
     order: 2,
     isDefault: true,
   });
@@ -99,7 +96,6 @@ export async function ensureHabitsGroup(userId: string) {
     name: "Habits",
     timeOfDay: "habit",
     startTime: null,
-    collapseAfter: null,
     order: nextOrder,
     isDefault: false,
   });
@@ -165,7 +161,6 @@ export async function ensureAfternoonGroup(userId: string) {
     name: "Afternoon Routine",
     timeOfDay: "custom",
     startTime: "12:00",
-    collapseAfter: "17:00",
     order: afternoonOrder,
     isDefault: true,
   });
