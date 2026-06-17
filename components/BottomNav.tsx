@@ -159,7 +159,10 @@ export default function BottomNav() {
       ))}
 
       {/* Nav bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="mx-auto max-w-mobile relative">
           {/* FAB */}
           <button
@@ -183,7 +186,7 @@ export default function BottomNav() {
           </button>
 
           {/* Tabs */}
-          <div className="bg-card border-t border-border" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div>
             <div className="flex items-stretch h-16">
               {LEFT_TABS.map(({ href, label, Icon }) => {
                 const active = pathname === href || pathname.startsWith(href + "/");
