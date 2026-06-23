@@ -29,7 +29,7 @@ export async function POST(
   const order = goal.milestones.length;
   goal.milestones.push({
     name: name.trim(),
-    targetDate: targetDate ? new Date(targetDate) : null,
+    targetDate: targetDate ?? null,
     order,
     complete: false,
     completedAt: null,

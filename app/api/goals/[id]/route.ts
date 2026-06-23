@@ -51,7 +51,7 @@ export async function PATCH(
   if (body.name !== undefined) update.name = body.name.trim();
   if (body.description !== undefined) update.description = body.description?.trim() || null;
   if (body.status !== undefined) update.status = body.status;
-  if (body.targetDate !== undefined) update.targetDate = body.targetDate ? new Date(body.targetDate) : null;
+  if (body.targetDate !== undefined) update.targetDate = body.targetDate ?? null;
   if (body.progressPct !== undefined) update.progressPct = Math.max(0, Math.min(100, body.progressPct));
   if (body.outcomeMetric !== undefined) update.outcomeMetric = body.outcomeMetric;
 

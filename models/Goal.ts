@@ -16,7 +16,7 @@ export interface ITask {
 export interface IMilestone {
   _id: Types.ObjectId;
   name: string;
-  targetDate: Date | null;
+  targetDate: string | null; // YYYY-MM-DD local date string (not a Date — avoids UTC midnight ambiguity)
   order: number;
   complete: boolean; // DERIVED — all tasks done (or manually toggled when no tasks)
   completedAt: Date | null;
@@ -35,7 +35,7 @@ export interface IGoal extends Document {
   name: string;
   description: string | null;
   status: "active" | "complete" | "paused" | "abandoned";
-  targetDate: Date | null;
+  targetDate: string | null; // YYYY-MM-DD local date string (not a Date — avoids UTC midnight ambiguity)
   progressPct: number; // 0-100, manual when no milestones/tasks
   outcomeMetric: {
     label: string;
@@ -66,7 +66,7 @@ const TaskSchema = new Schema<ITask>(
 const MilestoneSchema = new Schema<IMilestone>(
   {
     name: { type: String, required: true },
-    targetDate: { type: Date, default: null },
+    targetDate: { type: String, default: null },
     order: { type: Number, default: 0 },
     complete: { type: Boolean, default: false },
     completedAt: { type: Date, default: null },
@@ -94,7 +94,7 @@ const GoalSchema = new Schema<IGoal>(
       enum: ["active", "complete", "paused", "abandoned"],
       default: "active",
     },
-    targetDate: { type: Date, default: null },
+    targetDate: { type: String, default: null },
     progressPct: { type: Number, default: 0, min: 0, max: 100 },
     outcomeMetric: {
       type: new Schema(
@@ -142,9 +142,7 @@ export function serializeGoal(g: any) {
   const milestones = (g.milestones ?? []).map((m: any) => ({
     _id: m._id.toString(),
     name: m.name,
-    targetDate: m.targetDate
-      ? new Date(m.targetDate).toISOString().split("T")[0]
-      : null,
+    targetDate: m.targetDate ?? null,
     order: m.order ?? 0,
     complete: m.complete ?? false,
     completedAt: m.completedAt ?? null,
@@ -165,9 +163,7 @@ export function serializeGoal(g: any) {
     name: g.name,
     description: g.description ?? null,
     status: g.status,
-    targetDate: g.targetDate
-      ? new Date(g.targetDate).toISOString().split("T")[0]
-      : null,
+    targetDate: g.targetDate ?? null,
     progressPct: g.progressPct ?? 0,
     outcomeMetric: g.outcomeMetric ?? null,
     outcomeLog: (g.outcomeLog ?? []).map((e: any) => ({

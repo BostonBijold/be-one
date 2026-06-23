@@ -12,12 +12,12 @@ import FABHabitSheet from "@/components/FABHabitSheet";
 import FABTaskSheet from "@/components/FABTaskSheet";
 
 const LEFT_TABS = [
-  { href: "/routines", label: "Routines", Icon: ListChecks },
-  { href: "/goals",    label: "Goals",    Icon: Target      },
+  { href: "/routines",  label: "Routines",  Icon: ListChecks },
+  { href: "/analytics", label: "Analytics", Icon: BarChart3  },
 ];
 const RIGHT_TABS = [
-  { href: "/analytics", label: "Analytics", Icon: BarChart3 },
-  { href: "/virtues",   label: "Virtues",   Icon: ScrollText },
+  { href: "/goals",   label: "Goals",   Icon: Target     },
+  { href: "/virtues", label: "Virtues", Icon: ScrollText },
 ];
 
 // Radial layout: 3 bubbles at 130° / 90° / 50° from the horizontal axis.
@@ -27,7 +27,6 @@ const DIAL = [
   {
     key: "task",
     icon: CheckSquare,
-    label: "Task",
     bg: "bg-blue-muted",
     fg: "text-text",
     left: "calc(50% - 92px)",
@@ -38,7 +37,6 @@ const DIAL = [
   {
     key: "startNext",
     icon: Play,
-    label: "Start Next",
     bg: "bg-olive",
     fg: "text-text",
     left: "calc(50% - 28px)",
@@ -49,7 +47,6 @@ const DIAL = [
   {
     key: "habit",
     icon: Sparkles,
-    label: "Habit",
     bg: "bg-gold",
     fg: "text-bg",
     left: "calc(50% + 36px)",
@@ -58,6 +55,11 @@ const DIAL = [
     delay: 100,
   },
 ];
+
+const DIAL_LABELS: Record<string, string> = {
+  task: "Task",
+  habit: "Habit",
+};
 
 function todayStr() {
   return new Date().toLocaleDateString("sv"); // YYYY-MM-DD in local time
@@ -70,6 +72,7 @@ export default function BottomNav() {
   const [habitOpen, setHabitOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [startLabel, setStartLabel] = useState<"Start Routine" | "Continue Routine">("Start Routine");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (msg: string) => {
@@ -80,10 +83,22 @@ export default function BottomNav() {
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
+  // Determine label: "Start Routine" when no logs exist today, "Continue Routine" otherwise
+  useEffect(() => {
+    const date = todayStr();
+    fetch(`/api/routines/start-next?date=${date}`)
+      .then((r) => r.json())
+      .then((data: { hasNext: boolean; hasLogs: boolean }) => {
+        setStartLabel(data.hasLogs ? "Continue Routine" : "Start Routine");
+      })
+      .catch(() => {});
+  }, []);
+
   const handleStartNext = async () => {
     const date = todayStr();
     const res = await fetch(`/api/routines/start-next?date=${date}`);
-    const data = await res.json() as { hasNext: boolean };
+    const data = await res.json() as { hasNext: boolean; hasLogs: boolean };
+    setStartLabel(data.hasLogs ? "Continue Routine" : "Start Routine");
     if (!data.hasNext) {
       showToast("All routines complete for today.");
       return;
@@ -135,28 +150,31 @@ export default function BottomNav() {
       )}
 
       {/* Arc bubbles */}
-      {DIAL.map(({ key, icon: Icon, label, bg, fg, left, bottom, origin, delay }) => (
-        <button
-          key={key}
-          onClick={() => handleAction(key)}
-          aria-label={label}
-          className={`fixed z-40 w-14 h-14 rounded-full ${bg} ${fg} flex flex-col items-center justify-center gap-0.5 shadow-lg transition-all duration-200 ${origin} ${
-            open
-              ? "opacity-100 scale-100 pointer-events-auto"
-              : "opacity-0 scale-0 pointer-events-none"
-          }`}
-          style={{
-            left,
-            bottom: `calc(${bottom}px + env(safe-area-inset-bottom))`,
-            transitionDelay: open ? `${delay}ms` : "0ms",
-          }}
-        >
-          <Icon size={17} strokeWidth={2} />
-          <span className="font-mono text-[8px] uppercase tracking-wider leading-none">
-            {label}
-          </span>
-        </button>
-      ))}
+      {DIAL.map(({ key, icon: Icon, bg, fg, left, bottom, origin, delay }) => {
+        const label = key === "startNext" ? startLabel : DIAL_LABELS[key] ?? key;
+        return (
+          <button
+            key={key}
+            onClick={() => handleAction(key)}
+            aria-label={label}
+            className={`fixed z-40 w-14 h-14 rounded-full ${bg} ${fg} flex flex-col items-center justify-center gap-0.5 shadow-lg transition-all duration-200 ${origin} ${
+              open
+                ? "opacity-100 scale-100 pointer-events-auto"
+                : "opacity-0 scale-0 pointer-events-none"
+            }`}
+            style={{
+              left,
+              bottom: `calc(${bottom}px + env(safe-area-inset-bottom))`,
+              transitionDelay: open ? `${delay}ms` : "0ms",
+            }}
+          >
+            <Icon size={17} strokeWidth={2} />
+            <span className="font-mono text-[8px] uppercase tracking-wider leading-none text-center px-0.5">
+              {label}
+            </span>
+          </button>
+        );
+      })}
 
       {/* Nav bar */}
       <nav

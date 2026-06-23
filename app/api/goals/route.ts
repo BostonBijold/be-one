@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     userId,
     name: body.name.trim(),
     description: body.description?.trim() || null,
-    targetDate: body.targetDate ? new Date(body.targetDate) : null,
+    targetDate: body.targetDate ?? null,
     outcomeMetric: body.outcomeMetric ?? null,
     status: "active",
     progressPct: 0,

@@ -78,7 +78,7 @@ export default function ReviewView({
 
   const loadSummary = useCallback((window: 7 | 30) => {
     setLoading(true);
-    fetch(`/api/virtue-checkins?days=${window}`)
+    fetch(`/api/virtue-checkins?days=${window}&localDate=${today}`)
       .then((r) => r.json())
       .then((data: WindowSummary) => {
         setSummary(data);

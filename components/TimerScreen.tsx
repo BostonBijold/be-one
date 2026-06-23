@@ -12,6 +12,7 @@ export interface TimerItem {
 
 interface Props {
   item: TimerItem;
+  initialElapsed?: number; // seconds already elapsed (from server startedAt on resume)
   onComplete: (actualMinutes: number) => void;
   onMissed: () => void;
   onClose: () => void;
@@ -23,10 +24,10 @@ function pad(n: number) {
 
 const STOPWATCH_SOFT_CAP = 30 * 60; // ring fills over 30 minutes, stays full after
 
-export default function TimerScreen({ item, onComplete, onMissed, onClose }: Props) {
+export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMissed, onClose }: Props) {
   const isStopwatch = item.itemType === "stopwatch";
 
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(initialElapsed);
   const [isRunning, setIsRunning] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

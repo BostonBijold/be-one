@@ -32,7 +32,7 @@ interface Props {
     opts?: { actualMinutes?: number; isBackEntry?: boolean }
   ) => void;
   onStartTimer: (item: RowItem) => void;
-  onStartRoutine: (group: GroupCardGroup) => void;
+  onStartRoutine: (group: GroupCardGroup, startIndex: number) => void;
   onOpenCheckIn: (item: RowItem) => void;
   onOpenReview: (item: RowItem) => void;
 }
@@ -85,19 +85,22 @@ function fmtMins(mins: number) {
 }
 
 const STATE_COLOR: Record<LogState, string> = {
-  done: "text-olive",
-  missed: "text-burgundy-light",
-  rest: "text-blue-muted",
+  in_progress: "text-amber",
+  done:        "text-olive",
+  missed:      "text-burgundy-light",
+  rest:        "text-blue-muted",
 };
 const STATE_SYMBOL: Record<LogState, string> = {
-  done: "✓",
-  missed: "✗",
-  rest: "~",
+  in_progress: "▶",
+  done:        "✓",
+  missed:      "✗",
+  rest:        "~",
 };
 const DOT_COLOR: Record<LogState, string> = {
-  done: "bg-olive",
-  missed: "bg-burgundy",
-  rest: "bg-blue-muted",
+  in_progress: "bg-amber",
+  done:        "bg-olive",
+  missed:      "bg-burgundy",
+  rest:        "bg-blue-muted",
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -131,7 +134,11 @@ export default function RoutineGroupCard({
     [group.items, selectedDate]
   );
 
-  const isComplete = visibleItems.length > 0 && visibleItems.every((i) => !!logs[i._id]);
+  // in_progress doesn't count as complete — the item is actively being timed
+  const isComplete = visibleItems.length > 0 && visibleItems.every((i) => {
+    const s = logs[i._id]?.state;
+    return s === "done" || s === "missed" || s === "rest";
+  });
 
   // Past dates: always start expanded so history is visible
   // Today: expand while inside the time window, collapse before it opens or after it closes
@@ -334,15 +341,19 @@ export default function RoutineGroupCard({
             </div>
           )}
 
-          {visibleItems.length > 0 && !isComplete && !isPastDate && group.timeOfDay !== "habit" && (
-            <button
-              onClick={() => onStartRoutine(group)}
-              className="mt-3 w-full flex items-center justify-center gap-2 bg-olive text-text font-body font-medium py-3.5 rounded-card min-h-[48px] active:opacity-90 transition-opacity"
-            >
-              <Play size={15} fill="currentColor" />
-              Start Routine
-            </button>
-          )}
+          {visibleItems.length > 0 && !isComplete && !isPastDate && group.timeOfDay !== "habit" && (() => {
+            const hasStarted = visibleItems.some((i) => !!logs[i._id]);
+            const firstIncompleteIdx = Math.max(0, visibleItems.findIndex((i) => logs[i._id]?.state !== "done"));
+            return (
+              <button
+                onClick={() => onStartRoutine(group, firstIncompleteIdx)}
+                className="mt-3 w-full flex items-center justify-center gap-2 bg-olive text-text font-body font-medium py-3.5 rounded-card min-h-[48px] active:opacity-90 transition-opacity"
+              >
+                <Play size={15} fill="currentColor" />
+                {hasStarted ? "Continue Routine" : "Start Routine"}
+              </button>
+            );
+          })()}
         </div>
       )}
     </section>

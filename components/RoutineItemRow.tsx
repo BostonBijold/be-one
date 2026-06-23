@@ -38,21 +38,24 @@ function fmtMins(mins: number) {
 }
 
 const BORDER: Record<LogState, string> = {
-  done:   "border-l-[3px] border-l-olive",
-  missed: "border-l-[3px] border-l-burgundy",
-  rest:   "border-l-[3px] border-l-blue-muted",
+  in_progress: "border-l-[3px] border-l-amber",
+  done:        "border-l-[3px] border-l-olive",
+  missed:      "border-l-[3px] border-l-burgundy",
+  rest:        "border-l-[3px] border-l-blue-muted",
 };
 
 const BADGE: Record<LogState, string> = {
-  done:   "text-olive bg-olive/10",
-  missed: "text-burgundy-light bg-burgundy/10",
-  rest:   "text-blue-muted bg-blue-muted/10",
+  in_progress: "text-amber bg-amber/10",
+  done:        "text-olive bg-olive/10",
+  missed:      "text-burgundy-light bg-burgundy/10",
+  rest:        "text-blue-muted bg-blue-muted/10",
 };
 
 const LABEL: Record<LogState, string> = {
-  done:   "Done",
-  missed: "Missed",
-  rest:   "Rest",
+  in_progress: "Active",
+  done:        "Done",
+  missed:      "Missed",
+  rest:        "Rest",
 };
 
 export default function RoutineItemRow({
@@ -137,7 +140,30 @@ export default function RoutineItemRow({
       {/* Action panel */}
       {isExpanded && (
         <div className="px-4 pb-4 space-y-2">
-          {!state ? (
+          {state === "in_progress" ? (
+            <>
+              <button
+                onClick={onStartTimer}
+                className="w-full flex items-center justify-between bg-amber/10 hover:bg-amber/20 border border-amber/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
+              >
+                <span className="font-body text-sm font-medium">▶ Resume Timer</span>
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onStateChange("missed", { isBackEntry })}
+                  className="flex-1 border border-burgundy/40 hover:border-burgundy text-burgundy-light py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                >
+                  ✗ Missed
+                </button>
+                <button
+                  onClick={() => onStateChange(null)}
+                  className="flex-1 border border-border-light text-dim py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                >
+                  Undo
+                </button>
+              </div>
+            </>
+          ) : !state ? (
             <>
               {/* Special item types */}
               {item.itemType === "virtue_checkin" && (

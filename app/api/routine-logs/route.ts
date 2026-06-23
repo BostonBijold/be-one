@@ -14,6 +14,24 @@ function resolveUserId(sessionId?: string): string | null {
   return null;
 }
 
+function serializeLog(l: {
+  _id: { toString(): string };
+  routineItemId: { toString(): string };
+  date: string;
+  actualMinutes?: number | null;
+  startedAt?: Date | null;
+  state: LogState;
+}) {
+  return {
+    _id: l._id.toString(),
+    routineItemId: l.routineItemId.toString(),
+    date: l.date,
+    actualMinutes: l.actualMinutes ?? null,
+    startedAt: l.startedAt ? new Date(l.startedAt).toISOString() : null,
+    state: l.state,
+  };
+}
+
 export async function GET(req: NextRequest) {
   const session = await auth();
   const userId = resolveUserId(session?.user?.id);
@@ -22,18 +40,14 @@ export async function GET(req: NextRequest) {
   const date = req.nextUrl.searchParams.get("date") ?? todayString();
   await connectDB();
   const logs = await RoutineLog.find({ userId, date }).lean();
-
-  return NextResponse.json(
-    logs.map((l) => ({
-      _id: l._id.toString(),
-      routineItemId: l.routineItemId.toString(),
-      date: l.date,
-      actualMinutes: l.actualMinutes,
-      state: l.state,
-    }))
-  );
+  return NextResponse.json(logs.map(serializeLog));
 }
 
+// POST — creates or replaces a log entry.
+// For state 'in_progress': records startedAt = now, clears prior time fields.
+// For terminal states (done/missed/rest): sets state + actualMinutes + isBackEntry.
+// Uses $set only — DO NOT put filter fields in $setOnInsert, MongoDB rejects it as
+// conflicting mods and the write silently fails on the client.
 export async function POST(req: NextRequest) {
   const session = await auth();
   const userId = resolveUserId(session?.user?.id);
@@ -53,19 +67,68 @@ export async function POST(req: NextRequest) {
 
   await connectDB();
 
+  let setData: Record<string, unknown>;
+  if (state === "in_progress") {
+    setData = {
+      state,
+      startedAt: new Date(),
+      completedAt: null,
+      actualMinutes: null,
+      isBackEntry: false,
+    };
+  } else {
+    setData = {
+      state,
+      actualMinutes: actualMinutes ?? null,
+      isBackEntry: isBackEntry ?? false,
+    };
+  }
+
   const log = await RoutineLog.findOneAndUpdate(
     { userId, routineItemId, date },
-    { userId, routineItemId, date, actualMinutes, state, isBackEntry: isBackEntry ?? false },
-    { upsert: true, new: true }
-  );
+    { $set: setData },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  ).lean();
 
-  return NextResponse.json({
-    _id: log._id.toString(),
-    routineItemId: log.routineItemId.toString(),
-    date: log.date,
-    actualMinutes: log.actualMinutes,
-    state: log.state,
-  });
+  return NextResponse.json(serializeLog(log));
+}
+
+// PATCH — completes or misses an existing in_progress timer log.
+// For state 'done': sets completedAt = now, derives actualMinutes from startedAt.
+// For state 'missed': just updates state.
+export async function PATCH(req: NextRequest) {
+  const session = await auth();
+  const userId = resolveUserId(session?.user?.id);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { routineItemId, date, state, actualMinutes: fallbackMins } = (await req.json()) as {
+    routineItemId: string;
+    date: string;
+    state: "done" | "missed";
+    actualMinutes?: number;
+  };
+
+  await connectDB();
+
+  const now = new Date();
+  const setData: Record<string, unknown> = { state };
+
+  if (state === "done") {
+    setData.completedAt = now;
+    const existing = await RoutineLog.findOne({ userId, routineItemId, date }).lean();
+    const startedAt = existing?.startedAt ? new Date(existing.startedAt) : null;
+    setData.actualMinutes = startedAt
+      ? Math.max(1, Math.round((now.getTime() - startedAt.getTime()) / 60000))
+      : (fallbackMins ?? 1);
+  }
+
+  const log = await RoutineLog.findOneAndUpdate(
+    { userId, routineItemId, date },
+    { $set: setData },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  ).lean();
+
+  return NextResponse.json(serializeLog(log));
 }
 
 export async function DELETE(req: NextRequest) {
@@ -80,7 +143,6 @@ export async function DELETE(req: NextRequest) {
 
   await connectDB();
   await RoutineLog.deleteOne({ userId, routineItemId, date });
-
   return NextResponse.json({ ok: true });
 }
 

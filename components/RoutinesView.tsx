@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import DateNav from "@/components/DateNav";
@@ -22,6 +22,7 @@ export interface RoutineLogEntry {
   routineItemId: string;
   date: string;
   actualMinutes?: number;
+  startedAt?: string; // ISO string — present when state is in_progress
   state: LogState;
 }
 
@@ -43,6 +44,7 @@ interface Props {
 
 interface ActiveSession {
   group: GroupCardGroup;
+  startIndex: number;
 }
 
 export default function RoutinesView({
@@ -55,12 +57,14 @@ export default function RoutinesView({
 }: Props) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(today);
+  const prevTodayRef = useRef(today);
   const [virtue, setVirtue] = useState(initialVirtue);
   const [virtueOpen, setVirtueOpen] = useState(false);
   const [logs, setLogs] = useState<Record<string, RoutineLogEntry>>(
     Object.fromEntries(initialLogs.map((l) => [l.routineItemId, l]))
   );
   const [timerItem, setTimerItem] = useState<TimerItem | null>(null);
+  const [timerInitialElapsed, setTimerInitialElapsed] = useState(0);
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [addHabitGroup, setAddHabitGroup] = useState<{ id: string; name: string } | null>(null);
   const [checkInItem, setCheckInItem] = useState<RowItem | null>(null);
@@ -71,11 +75,10 @@ export default function RoutinesView({
   const routineGroups = useMemo(() => groups.filter((g) => g.timeOfDay !== "habit"), [groups]);
   const habitGroups = useMemo(() => groups.filter((g) => g.timeOfDay === "habit"), [groups]);
 
-  // Handle URL params passed from QuickAddSheet / FAB navigation
+  // Handle URL params passed from FAB navigation
   useEffect(() => {
     if (autoStartNext) {
       const logsMap = Object.fromEntries(initialLogs.map((l) => [l.routineItemId, l]));
-      // Find the first incomplete item across all routine groups (morning → afternoon → evening)
       let found: TimerItem | null = null;
       outer: for (const g of routineGroups) {
         const visible = g.items.filter((i) => isItemVisibleOn(i, today));
@@ -83,13 +86,30 @@ export default function RoutinesView({
           if (!logsMap[item._id]) { found = item; break outer; }
         }
       }
-      if (found) setTimerItem(found);
+      if (found) { setTimerInitialElapsed(0); setTimerItem(found); }
       router.replace("/routines");
     }
     if (autoAddHabit) {
       const target = habitGroups[0];
       if (target) setAddHabitGroup({ id: target._id, name: target.name });
       router.replace("/routines");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-resume any in_progress timer from a previous session
+  useEffect(() => {
+    if (autoStartNext) return; // FAB will handle timer open
+    const inProgressLog = initialLogs.find((l) => l.state === "in_progress");
+    if (!inProgressLog?.startedAt) return;
+    for (const g of [...routineGroups, ...habitGroups]) {
+      const item = g.items.find((i) => i._id === inProgressLog.routineItemId);
+      if (item) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - new Date(inProgressLog.startedAt).getTime()) / 1000));
+        setTimerInitialElapsed(elapsed);
+        setTimerItem(item as TimerItem);
+        break;
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -102,6 +122,15 @@ export default function RoutinesView({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // If `today` changes (e.g. timezone redirect delivers a new date from the server),
+  // move selectedDate forward so logs sync to the correct day.
+  useEffect(() => {
+    if (prevTodayRef.current !== today) {
+      if (selectedDate === prevTodayRef.current) setSelectedDate(today);
+      prevTodayRef.current = today;
+    }
+  }, [today, selectedDate]);
 
   // Re-fetch logs whenever the selected date changes
   useEffect(() => {
@@ -176,25 +205,96 @@ export default function RoutinesView({
     [logs, selectedDate, isPastDate]
   );
 
+  // Opens the timer for an item. Creates an in_progress log on first tap;
+  // resumes from stored startedAt if one already exists.
+  const handleStartTimer = useCallback(
+    async (item: TimerItem) => {
+      const existingLog = logs[item._id];
+
+      if (existingLog?.state === "in_progress" && existingLog.startedAt) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - new Date(existingLog.startedAt).getTime()) / 1000));
+        setTimerInitialElapsed(elapsed);
+        setTimerItem(item);
+        return;
+      }
+
+      // Create in_progress log immediately so startedAt is server-authoritative
+      const optimistic: RoutineLogEntry = {
+        _id: existingLog?._id ?? "",
+        routineItemId: item._id,
+        date: selectedDate,
+        state: "in_progress",
+        startedAt: new Date().toISOString(),
+      };
+      setLogs((l) => ({ ...l, [item._id]: optimistic }));
+
+      const res = await fetch("/api/routine-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routineItemId: item._id, date: selectedDate, state: "in_progress" }),
+      });
+      if (res.ok) {
+        const saved: RoutineLogEntry = await res.json();
+        setLogs((l) => ({ ...l, [item._id]: saved }));
+      }
+
+      setTimerInitialElapsed(0);
+      setTimerItem(item);
+    },
+    [logs, selectedDate]
+  );
+
+  // PATCH the in_progress log to done. Server derives actualMinutes from startedAt.
+  // Falls back to client-computed actualMinutes if no server timestamp exists.
   const handleTimerComplete = useCallback(
     async (actualMinutes: number) => {
       if (!timerItem) return;
-      await handleStateChange(timerItem._id, "done", { actualMinutes });
+      setLogs((l) => ({
+        ...l,
+        [timerItem._id]: { ...(l[timerItem._id] ?? { _id: "", routineItemId: timerItem._id, date: selectedDate }), state: "done", actualMinutes },
+      }));
+      const res = await fetch("/api/routine-logs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routineItemId: timerItem._id, date: selectedDate, state: "done", actualMinutes }),
+      });
+      if (res.ok) {
+        const saved: RoutineLogEntry = await res.json();
+        setLogs((l) => ({ ...l, [timerItem._id]: saved }));
+      }
       setTimerItem(null);
     },
-    [timerItem, handleStateChange]
+    [timerItem, selectedDate]
   );
 
   const handleTimerMissed = useCallback(async () => {
     if (!timerItem) return;
-    await handleStateChange(timerItem._id, "missed");
+    setLogs((l) => ({
+      ...l,
+      [timerItem._id]: { ...(l[timerItem._id] ?? { _id: "", routineItemId: timerItem._id, date: selectedDate }), state: "missed" },
+    }));
+    await fetch("/api/routine-logs", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ routineItemId: timerItem._id, date: selectedDate, state: "missed" }),
+    });
     setTimerItem(null);
-  }, [timerItem, handleStateChange]);
+  }, [timerItem, selectedDate]);
 
-  const handleSessionFinish = useCallback(() => {
+  const handleSessionFinish = useCallback(async () => {
     setActiveSession(null);
+    // Re-fetch logs immediately so isComplete is accurate before router.refresh() arrives.
+    // RoutineSession writes directly to the DB without updating the parent logs state,
+    // so without this the group would briefly re-open with the Start/Continue button.
+    try {
+      const res = await fetch(`/api/routine-logs?date=${selectedDate}`);
+      if (res.ok) {
+        const fresh = (await res.json()) as RoutineLogEntry[];
+        setLogs(Object.fromEntries(fresh.map((l) => [l.routineItemId, l])));
+      }
+    } catch { /* silent — router.refresh() below will sync eventually */ }
     router.refresh();
-  }, [router]);
+  }, [router, selectedDate]);
 
   const handleAddHabit = useCallback(
     async (
@@ -241,6 +341,7 @@ export default function RoutinesView({
       {timerItem && (
         <TimerScreen
           item={timerItem}
+          initialElapsed={timerInitialElapsed}
           onComplete={handleTimerComplete}
           onMissed={handleTimerMissed}
           onClose={() => setTimerItem(null)}
@@ -252,6 +353,7 @@ export default function RoutinesView({
           groupName={sessionGroup.name}
           items={sessionItems}
           today={selectedDate}
+          startIndex={activeSession?.startIndex ?? 0}
           onClose={() => setActiveSession(null)}
           onFinish={handleSessionFinish}
         />
@@ -345,8 +447,8 @@ export default function RoutinesView({
                   isPastDate={isPastDate}
                   selectedDate={selectedDate}
                   onStateChange={handleStateChange}
-                  onStartTimer={(item) => setTimerItem(item)}
-                  onStartRoutine={(g) => setActiveSession({ group: g })}
+                  onStartTimer={handleStartTimer}
+                  onStartRoutine={(g, startIndex) => setActiveSession({ group: g, startIndex })}
                   onOpenCheckIn={(item) => setCheckInItem(item)}
                   onOpenReview={() => router.push(`/virtues?mode=weekly&date=${selectedDate}&return=routines`)}
                 />
@@ -383,7 +485,7 @@ export default function RoutinesView({
                       isPastDate={isPastDate}
                       selectedDate={selectedDate}
                       onStateChange={handleStateChange}
-                      onStartTimer={(item) => setTimerItem(item)}
+                      onStartTimer={handleStartTimer}
                       onStartRoutine={() => {}}
                       onOpenCheckIn={(item) => setCheckInItem(item)}
                       onOpenReview={() => router.push(`/virtues?mode=weekly&date=${selectedDate}&return=routines`)}

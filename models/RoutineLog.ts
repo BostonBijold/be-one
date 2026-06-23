@@ -1,15 +1,17 @@
 import mongoose, { Schema, Document, model, models } from "mongoose";
 
-export type LogState = "done" | "missed" | "rest";
+export type LogState = "in_progress" | "done" | "missed" | "rest";
 
 export interface IRoutineLog extends Document {
   userId: string;
   routineItemId: mongoose.Types.ObjectId;
   date: string;              // YYYY-MM-DD
-  actualMinutes?: number;    // null if missed/rest
+  actualMinutes?: number;    // null if missed/rest; derived from timestamps on timer completions
+  startedAt?: Date;          // set when state → in_progress
+  completedAt?: Date;        // set when state → done via timer
   state: LogState;
-  note?: string;             // optional manual back-entry note
-  isBackEntry: boolean;      // true when logged after the collapse window
+  note?: string;
+  isBackEntry: boolean;
   createdAt: Date;
 }
 
@@ -19,7 +21,9 @@ const RoutineLogSchema = new Schema<IRoutineLog>(
     routineItemId: { type: Schema.Types.ObjectId, ref: "RoutineItem", required: true },
     date: { type: String, required: true },
     actualMinutes: { type: Number, default: null },
-    state: { type: String, enum: ["done", "missed", "rest"], required: true },
+    startedAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
+    state: { type: String, enum: ["in_progress", "done", "missed", "rest"], required: true },
     note: { type: String, default: null },
     isBackEntry: { type: Boolean, default: false },
   },

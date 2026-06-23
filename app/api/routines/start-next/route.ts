@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
 
   await connectDB();
 
-  // Routine groups only (not habit groups), in display order
   const groups = await RoutineGroup.find({ userId, timeOfDay: { $ne: "habit" } })
     .sort({ order: 1 }).lean();
 
@@ -27,16 +26,18 @@ export async function GET(req: NextRequest) {
     RoutineLog.find({ userId, date }).lean(),
   ]);
 
+  const hasLogs = logs.length > 0;
+
+  // in_progress counts as logged — skip past it to find the next unstarted item
   const loggedIds = new Set(logs.map((l) => l.routineItemId.toString()));
 
-  // Walk groups in order, find first unlogged item
   for (const group of groups) {
     const groupItems = items
       .filter((i) => i.groupId.toString() === group._id.toString())
       .sort((a, b) => a.order - b.order);
     const next = groupItems.find((i) => !loggedIds.has(i._id.toString()));
-    if (next) return NextResponse.json({ hasNext: true });
+    if (next) return NextResponse.json({ hasNext: true, hasLogs });
   }
 
-  return NextResponse.json({ hasNext: false });
+  return NextResponse.json({ hasNext: false, hasLogs });
 }

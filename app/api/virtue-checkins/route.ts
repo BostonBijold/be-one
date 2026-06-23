@@ -13,9 +13,10 @@ function resolveUserId(id?: string) {
   return id ?? (process.env.SKIP_AUTH === "true" ? DEV_USER_ID : null);
 }
 
-function getDates(days: number): string[] {
+// anchorDate: the client's local today (YYYY-MM-DD). Never use server UTC here.
+function getDates(days: number, anchorDate: string): string[] {
   return Array.from({ length: days }, (_, i) => {
-    const d = new Date();
+    const d = new Date(anchorDate + "T12:00:00");
     d.setDate(d.getDate() - (days - 1 - i));
     return d.toISOString().split("T")[0];
   });
@@ -51,7 +52,9 @@ export async function GET(req: NextRequest) {
 
   if (daysParam) {
     const days = Math.min(30, Math.max(7, parseInt(daysParam) || 7));
-    const dates = getDates(days);
+    // localDate must be supplied by the client (browser knows the user's local date; server only knows UTC)
+    const localDate = searchParams.get("localDate") ?? new Date().toISOString().split("T")[0];
+    const dates = getDates(days, localDate);
 
     const docs = await VirtueCheckIn.find({ userId, date: { $in: dates } }).lean();
     const byDate: Record<string, (typeof docs)[0]> = {};

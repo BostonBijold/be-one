@@ -8,6 +8,7 @@ import VirtueModel from "@/models/Virtue";
 import { seedDefaultRoutines, ensureAfternoonGroup, ensureHabitsGroup, ensureVirtueCheckInItems } from "@/lib/seed";
 import { currentVirtueOrder } from "@/lib/seed-virtues";
 import RoutinesView from "@/components/RoutinesView";
+import type { LogState } from "@/models/RoutineLog";
 
 const ADMIN_EMAIL = "bostonrbijold@gmail.com";
 
@@ -123,7 +124,8 @@ export default async function RoutinesPage({
     routineItemId: l.routineItemId.toString(),
     date: l.date,
     actualMinutes: l.actualMinutes ?? undefined,
-    state: l.state as "done" | "missed" | "rest",
+    startedAt: l.startedAt ? (l.startedAt as Date).toISOString() : undefined,
+    state: l.state as LogState,
   }));
 
   // 7-day streak logs

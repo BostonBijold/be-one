@@ -16,6 +16,7 @@ interface Props {
   groupName: string;
   items: RowItem[];
   today: string;
+  startIndex?: number;
   onClose: () => void;
   onFinish: () => void;
 }
@@ -34,8 +35,8 @@ const RING_R = 70;
 const RING_CIRC = 2 * Math.PI * RING_R;
 const STOPWATCH_SOFT_CAP = 30 * 60;
 
-export default function RoutineSession({ groupName, items, today, onClose, onFinish }: Props) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export default function RoutineSession({ groupName, items, today, startIndex = 0, onClose, onFinish }: Props) {
+  const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [elapsed, setElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(true);
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
