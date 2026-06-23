@@ -107,10 +107,14 @@ export async function POST(req: NextRequest) {
     answers: Array<{ virtueId: string; virtueName: string; answer: "yes" | "no" }>;
   };
 
-  // Validate date — only today or yesterday
-  const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-  if (body.date !== today && body.date !== yesterday) {
+  // Validate date — only today or yesterday in the user's local timezone.
+  // The server is UTC; the client sends the local YYYY-MM-DD.
+  // Accept any date within 2 calendar days of UTC now — this covers every timezone
+  // on earth (max offset ±14 h) without requiring the server to know the user's tz.
+  const nowUtc = Date.now();
+  const submittedMs = new Date(body.date + "T12:00:00Z").getTime();
+  const diffDays = (nowUtc - submittedMs) / 86400000;
+  if (diffDays < -1 || diffDays > 2) {
     return NextResponse.json(
       { error: "You can only check in for today or yesterday." },
       { status: 400 }

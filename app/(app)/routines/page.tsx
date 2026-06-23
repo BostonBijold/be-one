@@ -15,10 +15,11 @@ export const dynamic = "force-dynamic";
 
 const DEV_USER_ID = "dev-local-user";
 
-function getWeekDates(): string[] {
+function getWeekDates(anchorDate: string): string[] {
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i)); // oldest → newest, today last
+    // Parse anchor as a local noon to avoid DST edge cases
+    const d = new Date(anchorDate + "T12:00:00");
+    d.setDate(d.getDate() - (6 - i)); // oldest → newest, anchor last
     return d.toISOString().split("T")[0];
   });
 }
@@ -79,9 +80,11 @@ export default async function RoutinesPage({
 
   const isAdmin = skipAuth || session?.user?.email === ADMIN_EMAIL;
 
-  // Prefer the client-supplied date (local timezone) over the server UTC date.
+  // Always trust the client-supplied date (local timezone).
+  // Never fall back to server UTC — the server doesn't know the user's timezone.
+  // The client-side useEffect in RoutinesView will redirect with ?date= on first load.
   const today = searchParams?.date ?? new Date().toISOString().split("T")[0];
-  const weekDates = getWeekDates();
+  const weekDates = getWeekDates(today);
 
   const groups = await RoutineGroup.find({ userId }).sort({ order: 1 }).lean();
 

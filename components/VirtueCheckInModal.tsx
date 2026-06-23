@@ -18,11 +18,11 @@ interface Props {
   onClose: () => void;
 }
 
-// Franklin's actual method: a clean day needs no mark at all.
-// Every virtue defaults to "clean" — tapping flags it as today's exception.
+type Answer = "yes" | "no";
+
 export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClose }: Props) {
   const [virtues, setVirtues] = useState<Virtue[]>([]);
-  const [exceptions, setExceptions] = useState<Set<string>>(new Set());
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,16 +36,12 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
       });
   }, []);
 
-  const canSubmit = !loading && !submitting && virtues.length > 0;
-  const cleanCount = virtues.length - exceptions.size;
+  const answeredCount = Object.keys(answers).length;
+  const allAnswered = !loading && virtues.length > 0 && answeredCount === virtues.length;
+  const canSubmit = allAnswered && !submitting;
 
-  const toggleException = (id: string) => {
-    setExceptions((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const setAnswer = (id: string, answer: Answer) => {
+    setAnswers((prev) => ({ ...prev, [id]: answer }));
   };
 
   const handleSubmit = async () => {
@@ -61,7 +57,7 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
           answers: virtues.map((v) => ({
             virtueId: v._id,
             virtueName: v.name,
-            answer: exceptions.has(v._id) ? "no" : "yes",
+            answer: answers[v._id],
           })),
         }),
       });
@@ -116,11 +112,11 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
                 <div className="flex-1 h-1 bg-bg rounded-full overflow-hidden">
                   <div
                     className="h-full bg-olive transition-all duration-300"
-                    style={{ width: `${(cleanCount / virtues.length) * 100}%` }}
+                    style={{ width: `${(answeredCount / virtues.length) * 100}%` }}
                   />
                 </div>
                 <span className="font-mono text-[10px] text-dim tabular-nums">
-                  {cleanCount}/{virtues.length} clean
+                  {answeredCount}/{virtues.length} answered
                 </span>
               </div>
             )}
@@ -132,30 +128,48 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
               <p className="text-dim font-mono text-xs text-center py-8">Loading virtues…</p>
             )}
             <p className="font-mono text-[9px] text-dim px-2 pt-1 pb-2">
-              Tap a virtue only if you slipped today. Everything else is assumed clean.
+              For each virtue — did you live it today? Be honest.
             </p>
             {virtues.map((virtue) => {
-              const flagged = exceptions.has(virtue._id);
+              const answer = answers[virtue._id];
               return (
-                <button
+                <div
                   key={virtue._id}
-                  onClick={() => toggleException(virtue._id)}
-                  className={`w-full flex items-center gap-3 py-2.5 px-2 rounded-lg text-left transition-colors ${
-                    flagged ? "bg-burgundy/10" : "hover:bg-bg/50"
+                  className={`flex items-center gap-3 py-2.5 px-2 rounded-lg mb-1 transition-colors ${
+                    answer === "yes"
+                      ? "bg-olive/10"
+                      : answer === "no"
+                      ? "bg-burgundy/10"
+                      : "bg-bg/30"
                   }`}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-body text-sm text-text">{virtue.name}</p>
                     <p className="font-mono text-[9px] text-dim mt-0.5 truncate">{virtue.tagline}</p>
                   </div>
-                  <span
-                    className={`font-mono text-[10px] font-bold flex items-center gap-1 flex-shrink-0 ${
-                      flagged ? "text-burgundy-light" : "text-olive"
-                    }`}
-                  >
-                    {flagged ? "✗ Missed" : "✓ Clean"}
-                  </span>
-                </button>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => setAnswer(virtue._id, "yes")}
+                      className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold transition-colors ${
+                        answer === "yes"
+                          ? "bg-olive text-bg"
+                          : "bg-bg text-dim border border-border hover:border-olive hover:text-olive"
+                      }`}
+                    >
+                      YES
+                    </button>
+                    <button
+                      onClick={() => setAnswer(virtue._id, "no")}
+                      className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold transition-colors ${
+                        answer === "no"
+                          ? "bg-burgundy text-text"
+                          : "bg-bg text-dim border border-border hover:border-burgundy-light hover:text-burgundy-light"
+                      }`}
+                    >
+                      NO
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -167,14 +181,14 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
             )}
             {!error && (
               <p className="font-mono text-[10px] text-dim mb-3 text-center">
-                {exceptions.size === 0
-                  ? "Clean day — nothing to flag."
-                  : `${exceptions.size} exception${exceptions.size !== 1 ? "s" : ""} marked today.`}
+                {!allAnswered
+                  ? `${virtues.length - answeredCount} virtue${virtues.length - answeredCount !== 1 ? "s" : ""} left to answer`
+                  : `${Object.values(answers).filter((a) => a === "yes").length}/${virtues.length} virtues lived today.`}
               </p>
             )}
             <button
               onClick={handleSubmit}
-              disabled={!canSubmit || submitting}
+              disabled={!canSubmit}
               className="w-full py-4 rounded-card bg-gold text-bg font-body font-semibold text-sm disabled:opacity-40 transition-opacity flex items-center justify-center gap-2"
             >
               {submitting ? (
