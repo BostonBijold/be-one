@@ -25,7 +25,7 @@ interface Props {
   selectedDate: string;
   onToggleExpand: () => void;
   onStartTimer: () => void;
-  onStateChange: (state: LogState | null, opts?: { actualMinutes?: number; isBackEntry?: boolean }) => void;
+  onStateChange: (state: LogState | null, opts?: { actualMinutes?: number; isBackEntry?: boolean; startedAt?: string; completedAt?: string }) => void;
   onOpenCheckIn?: () => void;
   onOpenReview?: () => void;
 }
@@ -35,6 +35,22 @@ function fmtMins(mins: number) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+// Convert a UTC ISO string to "HH:MM" in the browser's local timezone
+function isoToLocalTimeInput(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
+
+// Compute duration in minutes between two local "HH:MM" inputs on a given local date.
+// new Date("YYYY-MM-DDT HH:MM:00") is parsed as local time by JS engines.
+function calcMinutes(date: string, start: string, end: string): number | null {
+  if (!start || !end) return null;
+  const s = new Date(`${date}T${start}:00`).getTime();
+  const e = new Date(`${date}T${end}:00`).getTime();
+  if (e <= s) return null;
+  return Math.max(1, Math.round((e - s) / 60000));
 }
 
 const BORDER: Record<LogState, string> = {
@@ -68,17 +84,99 @@ export default function RoutineItemRow({
   const [backMins, setBackMins] = useState(
     item.itemType === "stopwatch" ? "30" : String(item.projectedMinutes)
   );
+  const [editingTime, setEditingTime] = useState(false);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
 
-  // Day-of-week for the selected date (0=Sun)
   const dow = new Date(selectedDate + "T12:00:00").getDay();
   const isSunday = dow === 0;
   const isCheckbox = item.itemType === "checkbox";
   const isStopwatch = item.itemType === "stopwatch";
   const isSpecial = item.itemType === "virtue_checkin" || item.itemType === "weekly_review";
+  const isTimeable = !isCheckbox && !isSpecial;
+
   const variance =
     !isCheckbox && !isStopwatch && state === "done" && log?.actualMinutes != null
       ? log.actualMinutes - item.projectedMinutes
       : null;
+
+  // Duration live-calculated from the two time inputs
+  const calcedMins = calcMinutes(selectedDate, startTime, endTime);
+
+  function openTimeEdit() {
+    if (log?.startedAt) setStartTime(isoToLocalTimeInput(log.startedAt));
+    else setStartTime("");
+    if (log?.completedAt) setEndTime(isoToLocalTimeInput(log.completedAt));
+    else setEndTime("");
+    setEditingTime(true);
+  }
+
+  function handleSaveTime() {
+    if (calcedMins === null) return;
+    const startedAt = new Date(`${selectedDate}T${startTime}:00`).toISOString();
+    const completedAt = new Date(`${selectedDate}T${endTime}:00`).toISOString();
+    onStateChange("done", { startedAt, completedAt });
+    setEditingTime(false);
+  }
+
+  // Time editing form — shown instead of the normal action panel when active
+  const timeEditPanel = (
+    <div className="space-y-3">
+      <p className="font-mono text-[10px] text-dim uppercase tracking-widest">
+        {state === "done" ? "Edit Time" : "Log Time"}
+      </p>
+
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <p className="font-mono text-[9px] text-dim mb-1.5">Started</p>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="w-full bg-bg border border-border-light rounded-card px-3 py-2.5 font-mono text-sm text-text min-h-[44px]"
+          />
+        </div>
+        <div className="flex-1">
+          <p className="font-mono text-[9px] text-dim mb-1.5">Finished</p>
+          <input
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            className="w-full bg-bg border border-border-light rounded-card px-3 py-2.5 font-mono text-sm text-text min-h-[44px]"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center h-5">
+        {calcedMins !== null ? (
+          <span className="font-mono text-xs">
+            <span className="text-olive font-medium">{fmtMins(calcedMins)}</span>
+            <span className="text-dim"> recorded</span>
+          </span>
+        ) : startTime && endTime ? (
+          <span className="font-mono text-xs text-burgundy-light">End must be after start</span>
+        ) : (
+          <span className="font-mono text-[10px] text-dim">enter start and end time</span>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => setEditingTime(false)}
+          className="flex-1 border border-border-light text-dim py-2.5 rounded-card text-sm font-body min-h-[44px]"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSaveTime}
+          disabled={calcedMins === null}
+          className="flex-1 bg-olive text-text py-2.5 rounded-card text-sm font-body font-medium min-h-[44px] disabled:opacity-30 transition-opacity"
+        >
+          {calcedMins !== null ? `Save · ${fmtMins(calcedMins)}` : "Save"}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className={state ? BORDER[state] : ""}>
@@ -140,7 +238,7 @@ export default function RoutineItemRow({
       {/* Action panel */}
       {isExpanded && (
         <div className="px-4 pb-4 space-y-2">
-          {state === "in_progress" ? (
+          {editingTime ? timeEditPanel : state === "in_progress" ? (
             <>
               <button
                 onClick={onStartTimer}
@@ -202,8 +300,8 @@ export default function RoutineItemRow({
                 </button>
               )}
 
-              {/* Standard / Stopwatch: timer or back-entry */}
-              {!isSpecial && !isCheckbox && (
+              {/* Standard / Stopwatch */}
+              {isTimeable && (
                 isBackEntry ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -253,12 +351,28 @@ export default function RoutineItemRow({
                   ~ Rest
                 </button>
               </div>
+
             </>
           ) : (
-            <div className="flex gap-2 flex-wrap">
-              {state !== "done" && !isSpecial && !isCheckbox && !isStopwatch && (
+            // Already logged (done / missed / rest)
+            <div className="space-y-2">
+              {/* Edit time — primary action for done timeable items */}
+              {state === "done" && isTimeable && (
+                <button
+                  onClick={openTimeEdit}
+                  className="w-full flex items-center justify-between bg-card-hover hover:bg-border/40 border border-border-light text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
+                >
+                  <span className="font-body text-sm font-medium">✏ Edit time</span>
+                  {log?.actualMinutes != null && (
+                    <span className="font-mono text-dim text-xs">{fmtMins(log.actualMinutes)} logged</span>
+                  )}
+                </button>
+              )}
+
+              {/* Retimer for missed/rest items */}
+              {state !== "done" && isTimeable && (
                 isBackEntry ? (
-                  <div className="flex items-center gap-2 flex-1">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() =>
                         onStateChange("done", {
@@ -284,34 +398,48 @@ export default function RoutineItemRow({
                 ) : (
                   <button
                     onClick={onStartTimer}
-                    className="flex-1 border border-olive/40 text-olive py-2.5 rounded-card text-sm font-body min-h-[44px]"
+                    className="flex-1 w-full border border-olive/40 text-olive py-2.5 rounded-card text-sm font-body min-h-[44px]"
                   >
                     ▶ Retimer
                   </button>
                 )
               )}
-              {state !== "missed" && (
+
+              {/* State-change row */}
+              <div className="flex gap-2">
+                {state !== "missed" && (
+                  <button
+                    onClick={() => onStateChange("missed", { isBackEntry })}
+                    className="flex-1 border border-burgundy/40 text-burgundy-light py-2.5 rounded-card text-sm font-body min-h-[44px]"
+                  >
+                    ✗ Missed
+                  </button>
+                )}
+                {state !== "rest" && (
+                  <button
+                    onClick={() => onStateChange("rest", { isBackEntry })}
+                    className="flex-1 border border-blue-muted/40 text-blue-muted py-2.5 rounded-card text-sm font-body min-h-[44px]"
+                  >
+                    ~ Rest
+                  </button>
+                )}
                 <button
-                  onClick={() => onStateChange("missed", { isBackEntry })}
-                  className="flex-1 border border-burgundy/40 text-burgundy-light py-2.5 rounded-card text-sm font-body min-h-[44px]"
+                  onClick={() => onStateChange(null)}
+                  className="flex-1 border border-border-light text-dim py-2.5 rounded-card text-sm font-body min-h-[44px]"
                 >
-                  ✗ Missed
+                  Undo
+                </button>
+              </div>
+
+              {/* Log with times for missed/rest items */}
+              {state !== "done" && isTimeable && (
+                <button
+                  onClick={openTimeEdit}
+                  className="w-full border border-border text-dim py-2 rounded-card font-mono text-xs min-h-[36px] hover:border-border-light transition-colors"
+                >
+                  ⏱ Log with specific times
                 </button>
               )}
-              {state !== "rest" && (
-                <button
-                  onClick={() => onStateChange("rest", { isBackEntry })}
-                  className="flex-1 border border-blue-muted/40 text-blue-muted py-2.5 rounded-card text-sm font-body min-h-[44px]"
-                >
-                  ~ Rest
-                </button>
-              )}
-              <button
-                onClick={() => onStateChange(null)}
-                className="flex-1 border border-border-light text-dim py-2.5 rounded-card text-sm font-body min-h-[44px]"
-              >
-                Undo
-              </button>
             </div>
           )}
         </div>

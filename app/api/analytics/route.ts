@@ -9,9 +9,10 @@ import RoutineLog from "@/models/RoutineLog";
 
 const DEV_USER_ID = "dev-local-user";
 
-function getDates(days: number): string[] {
+// anchorDate: client's local today (YYYY-MM-DD). Never derive from server UTC.
+function getDates(days: number, anchorDate: string): string[] {
   return Array.from({ length: days }, (_, i) => {
-    const d = new Date();
+    const d = new Date(anchorDate + "T12:00:00");
     d.setDate(d.getDate() - (days - 1 - i));
     return d.toISOString().split("T")[0];
   });
@@ -23,8 +24,11 @@ export async function GET(req: NextRequest) {
     session?.user?.id ?? (process.env.SKIP_AUTH === "true" ? DEV_USER_ID : null);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const days = Math.min(30, Math.max(7, parseInt(req.nextUrl.searchParams.get("days") ?? "7")));
-  const dates = getDates(days);
+  const { searchParams } = req.nextUrl;
+  const days = Math.min(30, Math.max(7, parseInt(searchParams.get("days") ?? "7")));
+  // Client must send its local date so date windows match stored local-date strings
+  const localDate = searchParams.get("localDate") ?? new Date().toISOString().split("T")[0];
+  const dates = getDates(days, localDate);
 
   await connectDB();
 
@@ -48,6 +52,49 @@ export async function GET(req: NextRequest) {
     const go = (groupOrderMap[a.groupId.toString()] ?? 99) - (groupOrderMap[b.groupId.toString()] ?? 99);
     return go !== 0 ? go : a.order - b.order;
   });
+
+  // ── Per-group item ID sets (for start-time attribution) ───────────────────
+  const groupItemIds: Record<string, Set<string>> = {};
+  for (const item of sortedItems) {
+    const gId = item.groupId.toString();
+    if (!groupItemIds[gId]) groupItemIds[gId] = new Set();
+    groupItemIds[gId].add(item._id.toString());
+  }
+
+  // ── Typical start time ────────────────────────────────────────────────────
+  // For each group, find the earliest startedAt per day, then average those.
+  // This answers "what time do you usually begin this routine."
+  // startedAt is a UTC Date; return avgMinutesUtc so the client can convert to
+  // local time using the browser's own timezone offset.
+  const groupEarliestByDay: Record<string, Record<string, number>> = {};
+
+  for (const log of logs) {
+    if (!log.startedAt) continue;
+    const itemId = log.routineItemId.toString();
+    const utcMins =
+      new Date(log.startedAt).getUTCHours() * 60 +
+      new Date(log.startedAt).getUTCMinutes();
+
+    for (const [gId, itemSet] of Object.entries(groupItemIds)) {
+      if (!itemSet.has(itemId)) continue;
+      if (!groupEarliestByDay[gId]) groupEarliestByDay[gId] = {};
+      const prev = groupEarliestByDay[gId][log.date];
+      if (prev === undefined || utcMins < prev) {
+        groupEarliestByDay[gId][log.date] = utcMins;
+      }
+    }
+  }
+
+  const groupAvgStart: Record<string, { avgMinutesUtc: number; sampleSize: number }> = {};
+  for (const [gId, byDay] of Object.entries(groupEarliestByDay)) {
+    const times = Object.values(byDay);
+    if (times.length > 0) {
+      groupAvgStart[gId] = {
+        avgMinutesUtc: Math.round(times.reduce((s, t) => s + t, 0) / times.length),
+        sampleSize: times.length,
+      };
+    }
+  }
 
   // ── Routine-level stats ───────────────────────────────────────────────────
   const groupStats = groups.map((group) => {
@@ -78,8 +125,19 @@ export async function GET(req: NextRequest) {
         ? Math.round(activeDays.reduce((s, d) => s + d.actualMins, 0) / activeDays.length)
         : 0;
     const totalProjectedMins = items.reduce((s, i) => s + i.projectedMinutes, 0);
+    const startInfo = groupAvgStart[gId] ?? null;
 
-    return { _id: gId, name: group.name, totalItems, daily, avgCompletionRate, avgActualMins, totalProjectedMins };
+    return {
+      _id: gId,
+      name: group.name,
+      totalItems,
+      daily,
+      avgCompletionRate,
+      avgActualMins,
+      totalProjectedMins,
+      avgStartMinutesUtc: startInfo?.avgMinutesUtc ?? null,
+      startTimeSampleSize: startInfo?.sampleSize ?? 0,
+    };
   });
 
   // ── Habit-level stats ─────────────────────────────────────────────────────
@@ -107,10 +165,9 @@ export async function GET(req: NextRequest) {
       !isCheckbox && doneDays.length > 0
         ? Math.round(doneDays.reduce((s, d) => s + (d.actualMinutes ?? item.projectedMinutes), 0) / doneDays.length)
         : null;
-    // Stopwatch has no target — actual time IS the data, but variance is meaningless
     const avgVariance = avgActualMins !== null && !isStopwatch ? avgActualMins - item.projectedMinutes : null;
 
-    const engagedDays = doneCount + missedCount; // rest and unlogged don't count
+    const engagedDays = doneCount + missedCount;
     return {
       _id: itemId,
       name: item.name,

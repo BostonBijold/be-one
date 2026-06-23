@@ -22,7 +22,8 @@ export interface RoutineLogEntry {
   routineItemId: string;
   date: string;
   actualMinutes?: number;
-  startedAt?: string; // ISO string — present when state is in_progress
+  startedAt?: string;   // ISO string — set when timer starts
+  completedAt?: string; // ISO string — set when timer finishes
   state: LogState;
 }
 
@@ -160,7 +161,7 @@ export default function RoutinesView({
     async (
       routineItemId: string,
       newState: LogState | null,
-      opts?: { actualMinutes?: number; isBackEntry?: boolean }
+      opts?: { actualMinutes?: number; isBackEntry?: boolean; startedAt?: string; completedAt?: string }
     ) => {
       const prev = logs[routineItemId];
 
@@ -175,6 +176,36 @@ export default function RoutinesView({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ routineItemId, date: selectedDate }),
         });
+      } else if (opts?.startedAt && opts?.completedAt) {
+        // Manual time edit — use PATCH with explicit timestamps
+        const mins = Math.max(1, Math.round(
+          (new Date(opts.completedAt).getTime() - new Date(opts.startedAt).getTime()) / 60000
+        ));
+        const optimistic: RoutineLogEntry = {
+          _id: prev?._id ?? "",
+          routineItemId,
+          date: selectedDate,
+          state: newState,
+          actualMinutes: mins,
+          startedAt: opts.startedAt,
+          completedAt: opts.completedAt,
+        };
+        setLogs((l) => ({ ...l, [routineItemId]: optimistic }));
+        const res = await fetch("/api/routine-logs", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            routineItemId,
+            date: selectedDate,
+            state: newState,
+            startedAt: opts.startedAt,
+            completedAt: opts.completedAt,
+          }),
+        });
+        if (res.ok) {
+          const saved = await res.json();
+          setLogs((l) => ({ ...l, [routineItemId]: saved }));
+        }
       } else {
         const optimistic: RoutineLogEntry = {
           _id: prev?._id ?? "",

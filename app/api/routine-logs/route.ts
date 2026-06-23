@@ -20,6 +20,7 @@ function serializeLog(l: {
   date: string;
   actualMinutes?: number | null;
   startedAt?: Date | null;
+  completedAt?: Date | null;
   state: LogState;
 }) {
   return {
@@ -28,6 +29,7 @@ function serializeLog(l: {
     date: l.date,
     actualMinutes: l.actualMinutes ?? null,
     startedAt: l.startedAt ? new Date(l.startedAt).toISOString() : null,
+    completedAt: l.completedAt ? new Date(l.completedAt).toISOString() : null,
     state: l.state,
   };
 }
@@ -101,11 +103,18 @@ export async function PATCH(req: NextRequest) {
   const userId = resolveUserId(session?.user?.id);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { routineItemId, date, state, actualMinutes: fallbackMins } = (await req.json()) as {
+  const {
+    routineItemId, date, state,
+    actualMinutes: fallbackMins,
+    startedAt: startOverride,
+    completedAt: endOverride,
+  } = (await req.json()) as {
     routineItemId: string;
     date: string;
     state: "done" | "missed";
     actualMinutes?: number;
+    startedAt?: string;   // ISO — manual time edit from client
+    completedAt?: string; // ISO — manual time edit from client
   };
 
   await connectDB();
@@ -113,7 +122,15 @@ export async function PATCH(req: NextRequest) {
   const now = new Date();
   const setData: Record<string, unknown> = { state };
 
-  if (state === "done") {
+  if (startOverride && endOverride) {
+    // Manual time edit: client supplied explicit start + end in local time converted to ISO
+    const start = new Date(startOverride);
+    const end = new Date(endOverride);
+    setData.startedAt = start;
+    setData.completedAt = end;
+    setData.actualMinutes = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
+  } else if (state === "done") {
+    // Timer completion: derive duration from server-recorded startedAt
     setData.completedAt = now;
     const existing = await RoutineLog.findOne({ userId, routineItemId, date }).lean();
     const startedAt = existing?.startedAt ? new Date(existing.startedAt) : null;

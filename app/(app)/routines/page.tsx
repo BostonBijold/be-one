@@ -125,6 +125,7 @@ export default async function RoutinesPage({
     date: l.date,
     actualMinutes: l.actualMinutes ?? undefined,
     startedAt: l.startedAt ? (l.startedAt as Date).toISOString() : undefined,
+    completedAt: l.completedAt ? (l.completedAt as Date).toISOString() : undefined,
     state: l.state as LogState,
   }));
 

@@ -29,7 +29,7 @@ interface Props {
   onStateChange: (
     routineItemId: string,
     state: LogState | null,
-    opts?: { actualMinutes?: number; isBackEntry?: boolean }
+    opts?: { actualMinutes?: number; isBackEntry?: boolean; startedAt?: string; completedAt?: string }
   ) => void;
   onStartTimer: (item: RowItem) => void;
   onStartRoutine: (group: GroupCardGroup, startIndex: number) => void;

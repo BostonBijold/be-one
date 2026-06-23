@@ -23,6 +23,8 @@ interface GroupStats {
   avgCompletionRate: number;
   avgActualMins: number;
   totalProjectedMins: number;
+  avgStartMinutesUtc: number | null;
+  startTimeSampleSize: number;
 }
 
 interface HabitStats {
@@ -52,6 +54,14 @@ interface AnalyticsData {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Convert UTC minutes-since-midnight to a local time string.
+// startedAt is stored in UTC; the browser knows the user's local offset.
+function utcMinsToLocalTime(avgMinutesUtc: number): string {
+  const d = new Date();
+  d.setUTCHours(Math.floor(avgMinutesUtc / 60) % 24, avgMinutesUtc % 60, 0, 0);
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+}
 
 function fmtMins(mins: number) {
   if (mins < 60) return `${mins}m`;
@@ -204,7 +214,8 @@ export default function AnalyticsContent() {
   useEffect(() => {
     setLoading(true);
     setData(null);
-    fetch(`/api/analytics?days=${days}`)
+    const localDate = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local tz
+    fetch(`/api/analytics?days=${days}&localDate=${localDate}`)
       .then((r) => r.json())
       .then((d: AnalyticsData) => {
         setData(d);
@@ -286,6 +297,18 @@ export default function AnalyticsContent() {
                         {completionPct}%
                       </span>
                     </div>
+
+                    {group.avgStartMinutesUtc !== null && group.startTimeSampleSize >= 2 && (
+                      <p className="font-mono text-[10px] text-dim mb-2">
+                        Usually starts{" "}
+                        <span className="text-muted">
+                          ~{utcMinsToLocalTime(group.avgStartMinutesUtc)}
+                        </span>
+                        <span className="text-dim ml-1">
+                          · {group.startTimeSampleSize}d sample
+                        </span>
+                      </p>
+                    )}
 
                     <div className="flex items-center gap-2 mb-4">
                       <span className="font-mono text-xs text-dim">
