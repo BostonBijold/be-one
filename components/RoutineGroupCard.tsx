@@ -144,8 +144,8 @@ export default function RoutineGroupCard({
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (isPastDate) return false;
     if (isComplete) return true;
-    if (inWindow) return false; // actively in window → start open
-    return true; // before window or past window → start collapsed
+    if (inWindow || beforeWindow) return false; // active or upcoming → start open
+    return true; // past window → start collapsed
   });
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
@@ -297,15 +297,6 @@ export default function RoutineGroupCard({
       {/* ── Expanded ────────────────────────────────────────────────────── */}
       {!effectivelyCollapsed && (
         <div>
-          {/* Banner only for genuinely different-day back-entries */}
-          {isPastDate && (
-            <div className="mb-3 px-4 py-2.5 rounded-card bg-tobacco/10 border border-tobacco/20">
-              <p className="font-mono text-tobacco text-xs">
-                Back-entry · recording for a past date
-              </p>
-            </div>
-          )}
-
           {group.timeOfDay === "habit" ? (
             <div className="space-y-2">
               {visibleItems.map((item) => (
