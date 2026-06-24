@@ -5,7 +5,7 @@ interface Props {
   dates: string[]; // 7 days oldest→newest
 }
 
-const DOT: Record<LogState, string> = {
+const DOT: Partial<Record<LogState, string>> = {
   done: "bg-olive",
   missed: "bg-burgundy",
   rest: "bg-blue-muted",

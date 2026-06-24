@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
   const log = await RoutineLog.findOneAndUpdate(
     { userId, routineItemId, date },
     { $set: setData },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   ).lean();
 
   return NextResponse.json(serializeLog(log));
@@ -142,7 +142,7 @@ export async function PATCH(req: NextRequest) {
   const log = await RoutineLog.findOneAndUpdate(
     { userId, routineItemId, date },
     { $set: setData },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   ).lean();
 
   return NextResponse.json(serializeLog(log));

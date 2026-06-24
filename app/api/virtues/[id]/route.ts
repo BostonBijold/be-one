@@ -31,7 +31,7 @@ export async function PATCH(
   const virtue = await VirtueModel.findByIdAndUpdate(
     params.id,
     { $set: update },
-    { new: true }
+    { returnDocument: "after" }
   ).lean();
 
   if (!virtue) return NextResponse.json({ error: "Not found" }, { status: 404 });

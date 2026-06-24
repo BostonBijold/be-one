@@ -33,7 +33,7 @@ export async function PATCH(
   const group = await RoutineGroup.findOneAndUpdate(
     { _id: params.groupId, userId },
     { $set: update },
-    { new: true }
+    { returnDocument: "after" }
   ).lean();
 
   if (!group) return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
         answers: body.answers,
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   ).lean();
 
   return NextResponse.json(doc);

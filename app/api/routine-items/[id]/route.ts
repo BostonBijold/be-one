@@ -55,7 +55,7 @@ export async function PATCH(
   const item = await RoutineItem.findOneAndUpdate(
     { _id: params.id, userId },
     { $set: sanitized },
-    { new: true }
+    { returnDocument: "after" }
   );
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
