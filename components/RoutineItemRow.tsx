@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Pencil } from "lucide-react";
 import StreakDots from "@/components/StreakDots";
 import HabitIcon from "@/components/HabitIcon";
 import type { RoutineLogEntry } from "@/components/RoutinesView";
@@ -362,7 +363,7 @@ export default function RoutineItemRow({
                   onClick={openTimeEdit}
                   className="w-full flex items-center justify-between bg-card-hover hover:bg-border/40 border border-border-light text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
                 >
-                  <span className="font-body text-sm font-medium">✏ Edit time</span>
+                  <span className="font-body text-sm font-medium flex items-center gap-1.5"><Pencil size={13} strokeWidth={1.75} />Edit time</span>
                   {log?.actualMinutes != null && (
                     <span className="font-mono text-dim text-xs">{fmtMins(log.actualMinutes)} logged</span>
                   )}

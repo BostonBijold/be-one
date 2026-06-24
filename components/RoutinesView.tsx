@@ -10,6 +10,7 @@ import RoutineSession from "@/components/RoutineSession";
 import VirtueSheet, { type VirtueData } from "@/components/VirtueSheet";
 import VirtueCheckInModal from "@/components/VirtueCheckInModal";
 import AddHabitSheet from "@/components/AddHabitSheet";
+import ManageRoutinesSheet from "@/components/ManageRoutinesSheet";
 import type { LogState } from "@/models/RoutineLog";
 import type { RowItem } from "@/components/RoutineItemRow";
 import { isItemVisibleOn } from "@/lib/routine-visibility";
@@ -64,11 +65,13 @@ export default function RoutinesView({
   const [logs, setLogs] = useState<Record<string, RoutineLogEntry>>(
     Object.fromEntries(initialLogs.map((l) => [l.routineItemId, l]))
   );
+  const [liveWeekLogs, setLiveWeekLogs] = useState<WeekLog[]>(weekLogs);
   const [timerItem, setTimerItem] = useState<TimerItem | null>(null);
   const [timerInitialElapsed, setTimerInitialElapsed] = useState(0);
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [addHabitGroup, setAddHabitGroup] = useState<{ id: string; name: string } | null>(null);
   const [checkInItem, setCheckInItem] = useState<RowItem | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
 
   const isPastDate = selectedDate !== today;
 
@@ -152,7 +155,7 @@ export default function RoutinesView({
 
   // weekLogs keyed by itemId → array of {date, state}
   const weekLogsByItem: Record<string, Array<{ date: string; state: LogState }>> = {};
-  for (const wl of weekLogs) {
+  for (const wl of liveWeekLogs) {
     if (!weekLogsByItem[wl.routineItemId]) weekLogsByItem[wl.routineItemId] = [];
     weekLogsByItem[wl.routineItemId].push({ date: wl.date, state: wl.state });
   }
@@ -165,7 +168,21 @@ export default function RoutinesView({
     ) => {
       const prev = logs[routineItemId];
 
+      // Keep streak dots in sync without a full refresh
+      const patchWeekLog = (state: LogState | null) => {
+        setLiveWeekLogs((prev) => {
+          const next = prev.filter(
+            (w) => !(w.routineItemId === routineItemId && w.date === selectedDate)
+          );
+          if (state && state !== "in_progress") {
+            next.push({ routineItemId, date: selectedDate, state });
+          }
+          return next;
+        });
+      };
+
       if (newState === null) {
+        patchWeekLog(null);
         setLogs((l) => {
           const next = { ...l };
           delete next[routineItemId];
@@ -178,6 +195,7 @@ export default function RoutinesView({
         });
       } else if (opts?.startedAt && opts?.completedAt) {
         // Manual time edit — use PATCH with explicit timestamps
+        patchWeekLog(newState);
         const mins = Math.max(1, Math.round(
           (new Date(opts.completedAt).getTime() - new Date(opts.startedAt).getTime()) / 60000
         ));
@@ -207,6 +225,7 @@ export default function RoutinesView({
           setLogs((l) => ({ ...l, [routineItemId]: saved }));
         }
       } else {
+        patchWeekLog(newState);
         const optimistic: RoutineLogEntry = {
           _id: prev?._id ?? "",
           routineItemId,
@@ -409,6 +428,13 @@ export default function RoutinesView({
         />
       )}
 
+      {manageOpen && (
+        <ManageRoutinesSheet
+          groups={groups}
+          onClose={() => setManageOpen(false)}
+        />
+      )}
+
       {checkInItem && (
         <VirtueCheckInModal
           thisWeekVirtue={virtue}
@@ -463,6 +489,17 @@ export default function RoutinesView({
                     style={{ width: totalItems > 0 ? `${(totalDone / totalItems) * 100}%` : "0%" }}
                   />
                 </div>
+                <button
+                  onClick={() => setManageOpen(true)}
+                  className="flex-shrink-0 min-h-[44px] flex items-center"
+                >
+                  <span
+                    className="font-mono text-[10px] tracking-[0.08em] px-[10px] py-[4px] rounded-pill border"
+                    style={{ background: "#2a2820", borderColor: "#3d3b2e", color: "#9a9280" }}
+                  >
+                    ⚙ Manage
+                  </span>
+                </button>
               </div>
             </div>
 

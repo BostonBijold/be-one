@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
 import { Play } from "lucide-react";
 import HabitIcon from "@/components/HabitIcon";
 import RoutineItemRow, { type RowItem } from "@/components/RoutineItemRow";
@@ -207,12 +206,6 @@ export default function RoutineGroupCard({
               <span className="text-dim"> · {fmtMins(projectedMins)}</span>
             </span>
           )}
-          <Link
-            href={`/routines/${group._id}/edit`}
-            className="font-mono text-xs text-dim border border-border px-2.5 py-1 rounded-pill hover:border-border-light min-h-[32px] flex items-center"
-          >
-            Edit
-          </Link>
         </div>
       </div>
 
@@ -263,27 +256,38 @@ export default function RoutineGroupCard({
         </button>
       )}
 
-      {/* ── Collapsed: incomplete dot summary (today, timeframe elapsed) ── */}
+      {/* ── Collapsed: incomplete icon summary (today, timeframe elapsed) ── */}
       {effectivelyCollapsed && !isComplete && (
         <button
           onClick={toggle}
           className="w-full text-left bg-card rounded-card px-4 py-3.5 flex items-center gap-2 hover:bg-card-hover transition-colors"
         >
-          {visibleItems.map((item) => {
-            const s = logs[item._id]?.state;
-            return (
-              <div
-                key={item._id}
-                className={`w-2 h-2 rounded-full flex-shrink-0 ${s ? DOT_COLOR[s] : "bg-border"}`}
-              />
-            );
-          })}
+          <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1">
+            {visibleItems.map((item) => {
+              const log = logs[item._id];
+              return (
+                <span key={item._id} className="flex items-center gap-1">
+                  <HabitIcon
+                    name={item.icon}
+                    size={14}
+                    strokeWidth={1.75}
+                    className={log ? STATE_COLOR[log.state] : "text-dim opacity-40"}
+                  />
+                  {log && (
+                    <span className={`font-mono text-[10px] leading-none font-semibold ${STATE_COLOR[log.state]}`}>
+                      {STATE_SYMBOL[log.state]}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
+          </div>
           {beforeWindow && group.startTime ? (
-            <span className="ml-auto font-mono text-dim text-xs">
+            <span className="ml-auto font-mono text-dim text-xs flex-shrink-0">
               starts {fmtTime(group.startTime)}
             </span>
           ) : collapseAfter ? (
-            <span className="ml-auto font-mono text-dim text-xs">
+            <span className="ml-auto font-mono text-dim text-xs flex-shrink-0">
               by {fmtTime(collapseAfter)}
             </span>
           ) : null}
