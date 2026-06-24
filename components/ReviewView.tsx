@@ -84,7 +84,7 @@ export default function ReviewView({
         setSummary(data);
         setLoading(false);
       });
-  }, []);
+  }, [today]);
 
   useEffect(() => { loadSummary(days); }, [days, loadSummary]);
 

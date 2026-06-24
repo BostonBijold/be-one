@@ -95,12 +95,6 @@ const STATE_SYMBOL: Record<LogState, string> = {
   missed:      "✗",
   rest:        "~",
 };
-const DOT_COLOR: Record<LogState, string> = {
-  in_progress: "bg-amber",
-  done:        "bg-olive",
-  missed:      "bg-burgundy",
-  rest:        "bg-blue-muted",
-};
 
 // ── Main component ────────────────────────────────────────────────────────────
 
