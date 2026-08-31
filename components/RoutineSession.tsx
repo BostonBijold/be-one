@@ -145,6 +145,12 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
   // runStartRef = Date.now() when the current running segment began (null if paused).
   const baseElapsedRef = useRef(0);
   const runStartRef = useRef<number | null>(null);
+  // Fires one extra Live Activity update exactly when the current item
+  // crosses its own target — see the [currentIndex] effect below. Without
+  // this, the widget only ever redraws on item-switch, so a habit left
+  // running past its target freezes at 00:00 instead of flipping to the
+  // amber "+MM:SS" overtime state (docs/features/live-activity.md).
+  const activityCrossingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const recompute = useCallback(() => {
     if (runStartRef.current != null) {
@@ -292,6 +298,14 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
     setElapsed(0);
     setIsRunning(false);
 
+    // Any crossing-timeout scheduled for the previous item no longer
+    // applies — it'll be re-scheduled below for this one if it's a
+    // countdown item still on-track.
+    if (activityCrossingTimeoutRef.current) {
+      clearTimeout(activityCrossingTimeoutRef.current);
+      activityCrossingTimeoutRef.current = null;
+    }
+
     (async () => {
       // Stamp the group id too, not just startedAt — this is what lets
       // closing the app mid-item (without tapping X) resume straight back
@@ -337,53 +351,84 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
         // `records` (the fresh fetch just above) rather than reusing
         // component state, since this runs inside an async effect and
         // `records` is already the live truth for exactly this moment.
-        // Only ever refreshed on an item switch, not per-second — see
-        // docs/features/live-activity.md's note on this being
-        // "eventually consistent," same as the countdown/color already are.
         const virtualStartedAt = Date.now() - seeded * 1000;
-        const projectionItems: ItemProjection[] = items.map((it) => {
-          if (it._id === item._id) {
-            return {
-              projectedMinutes: it.projectedMinutes,
-              state: "active",
-              targetInstant: virtualStartedAt + it.projectedMinutes * 60000,
-            };
-          }
-          const rec = records.find((r) => r.routineItemId === it._id);
-          if (rec && (rec.state === "done" || rec.state === "missed" || rec.state === "rest")) {
-            return {
-              projectedMinutes: it.projectedMinutes,
-              state: rec.state,
-              actualMinutes: rec.state === "done" ? rec.actualMinutes : undefined,
-            };
-          }
-          return { projectedMinutes: it.projectedMinutes, state: "pending" };
-        });
-        const nowMs = Date.now();
-        const timeline = computeTimeline(
-          items.map((it, i) => ({ id: it._id, ...projectionItems[i] })),
-          nowMs
-        );
-        const routineFinishAt = projectedFinishTime(projectionItems, new Date(nowMs));
 
-        updateRoutineActivity({
-          routineItemId: item._id,
-          routineGroupId: groupId,
-          routineLabel: groupName,
-          habitName: item.name,
-          startedAt: new Date(virtualStartedAt).toISOString(),
-          projectedMinutes: item.itemType === "stopwatch" ? 0 : item.projectedMinutes,
-          timelineSegments: timeline.segments.map((seg) => ({
-            pct: seg.pct,
-            colorState: seg.colorState === "active-over" ? "activeOver" : seg.colorState,
-          })),
-          routineStartedAt: new Date(timeline.startInstant).toISOString(),
-          routineFinishAt: routineFinishAt.toISOString(),
-        });
+        // Rebuilds and re-sends the same ContentState shape at whatever
+        // instant it's called — used both immediately below, and once more
+        // at the exact moment this item crosses its own target (scheduled
+        // further down). Recomputing at call time (rather than capturing
+        // one snapshot) keeps the timeline segments' pct math correct for
+        // whichever instant actually triggers the push.
+        const pushUpdate = () => {
+          const projectionItems: ItemProjection[] = items.map((it) => {
+            if (it._id === item._id) {
+              return {
+                projectedMinutes: it.projectedMinutes,
+                state: "active",
+                targetInstant: virtualStartedAt + it.projectedMinutes * 60000,
+              };
+            }
+            const rec = records.find((r) => r.routineItemId === it._id);
+            if (rec && (rec.state === "done" || rec.state === "missed" || rec.state === "rest")) {
+              return {
+                projectedMinutes: it.projectedMinutes,
+                state: rec.state,
+                actualMinutes: rec.state === "done" ? rec.actualMinutes : undefined,
+              };
+            }
+            return { projectedMinutes: it.projectedMinutes, state: "pending" };
+          });
+          const nowMs = Date.now();
+          const timeline = computeTimeline(
+            items.map((it, i) => ({ id: it._id, ...projectionItems[i] })),
+            nowMs
+          );
+          const routineFinishAt = projectedFinishTime(projectionItems, new Date(nowMs));
+
+          updateRoutineActivity({
+            routineItemId: item._id,
+            routineGroupId: groupId,
+            routineLabel: groupName,
+            habitName: item.name,
+            startedAt: new Date(virtualStartedAt).toISOString(),
+            projectedMinutes: item.itemType === "stopwatch" ? 0 : item.projectedMinutes,
+            timelineSegments: timeline.segments.map((seg) => ({
+              pct: seg.pct,
+              colorState: seg.colorState === "active-over" ? "activeOver" : seg.colorState,
+            })),
+            routineStartedAt: new Date(timeline.startInstant).toISOString(),
+            routineFinishAt: routineFinishAt.toISOString(),
+          });
+        };
+
+        pushUpdate();
+
+        // Countdown items only — a stopwatch has no target to cross.
+        // Schedules exactly one extra push for the instant this item's
+        // timer hits 00:00, so the widget gets a redraw to flip its
+        // countdown→overtime text and olive→amber color at (or right
+        // after) the crossing, instead of staying frozen until the user
+        // switches items. See activityCrossingTimeoutRef's declaration.
+        if (!cancelled && item.itemType !== "stopwatch" && item.projectedMinutes > 0) {
+          const targetInstant = virtualStartedAt + item.projectedMinutes * 60000;
+          const msUntilTarget = targetInstant - Date.now();
+          if (msUntilTarget > 0) {
+            activityCrossingTimeoutRef.current = setTimeout(() => {
+              if (cancelled) return;
+              pushUpdate();
+            }, msUntilTarget);
+          }
+        }
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (activityCrossingTimeoutRef.current) {
+        clearTimeout(activityCrossingTimeoutRef.current);
+        activityCrossingTimeoutRef.current = null;
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
 
