@@ -513,17 +513,16 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
 
   return (
     <div className="min-h-dvh bg-bg">
-      {/* ── Sticky back + title + completed-milestones toggle ──
-          top: 0 relative to .app-scroll's scrollport, matching the fixed
-          Header's own top-offset convention (env(safe-area-inset-top),
-          full-bleed bg-bg + border-b with centered inner content) — this
-          page just has no shared Header to reserve that space, so the
-          sticky bar itself fills it once scrolled to the top. */}
+      {/* ── Back + title + completed-milestones toggle ──
+          fixed top-0, matching Header's own positioning exactly (env(safe-area-inset-top),
+          full-bleed bg-bg + border-b with centered inner content) — this page has no
+          shared Header, so this bar fills the same top strip .app-scroll's
+          padding-top reserves for it, rather than sitting in-flow below that gap. */}
       <div
-        className="sticky top-0 z-30 bg-bg border-b border-border"
+        className="fixed top-0 left-0 right-0 z-30 bg-bg border-b border-border"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto max-w-mobile px-4 py-3 flex items-center gap-3">
+        <div className="mx-auto max-w-mobile px-4 h-16 flex items-center gap-3">
           <button
             onClick={() => router.back()}
             className="text-dim hover:text-muted flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2"
