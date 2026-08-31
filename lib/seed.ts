@@ -104,7 +104,18 @@ export async function ensureHabitsGroup(userId: string) {
 // Idempotent — adds Virtue Check-in + Weekly Review items to evening routine.
 export async function ensureVirtueCheckInItems(userId: string) {
   const alreadyDone = await RoutineItem.findOne({ userId, itemType: { $in: ["virtue_checkin", "weekly_review"] } }).lean();
-  if (alreadyDone) return;
+  if (alreadyDone) {
+    // Backfill for items seeded before scheduledDays-based visibility
+    // replaced the hardcoded Sunday-only rule in lib/routine-visibility.ts —
+    // without this, an already-seeded Weekly Review would default to
+    // scheduledDays: [0,1,2,3,4,5,6] and start showing every day instead of
+    // staying Sunday-only.
+    await RoutineItem.updateOne(
+      { userId, itemType: "weekly_review", scheduledDays: { $ne: [0] } },
+      { $set: { scheduledDays: [0] } }
+    );
+    return;
+  }
 
   const eveningGroup = await RoutineGroup.findOne({ userId, timeOfDay: "evening" }).lean();
   if (!eveningGroup) return;
@@ -137,6 +148,7 @@ export async function ensureVirtueCheckInItems(userId: string) {
       isActive: true,
       itemType: "weekly_review",
       linkedGoalId: null,
+      scheduledDays: [0],
     },
   ]);
 }
@@ -146,7 +158,14 @@ export async function ensureVirtueCheckInItems(userId: string) {
 // this item type shipped later and the two are independently toggleable.
 export async function ensureRoutineReviewItem(userId: string) {
   const alreadyDone = await RoutineItem.findOne({ userId, itemType: "routine_review" }).lean();
-  if (alreadyDone) return;
+  if (alreadyDone) {
+    // Same backfill as ensureVirtueCheckInItems above, for the same reason.
+    await RoutineItem.updateOne(
+      { userId, itemType: "routine_review", scheduledDays: { $ne: [0] } },
+      { $set: { scheduledDays: [0] } }
+    );
+    return;
+  }
 
   const eveningGroup = await RoutineGroup.findOne({ userId, timeOfDay: "evening" }).lean();
   if (!eveningGroup) return;
@@ -166,6 +185,7 @@ export async function ensureRoutineReviewItem(userId: string) {
     isActive: true,
     itemType: "routine_review",
     linkedGoalId: null,
+    scheduledDays: [0],
   });
 }
 

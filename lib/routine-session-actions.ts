@@ -2,6 +2,7 @@ import RoutineSession from "@/models/RoutineSession";
 import RoutineItem from "@/models/RoutineItem";
 import RoutineLog from "@/models/RoutineLog";
 import type { CompletionState } from "@/models/RoutineSession";
+import { isItemVisibleOn } from "@/lib/routine-visibility";
 
 // Group-level session bookkeeping, layered on top of the per-item RoutineLog
 // writes in lib/routine-log-actions.ts. RoutineLog stays the source of truth
@@ -19,9 +20,14 @@ import type { CompletionState } from "@/models/RoutineSession";
 // external-api.md), so there's exactly one query shape for "what does this
 // group look like today," not a third reimplementation of it.
 async function fetchGroupItemsAndLogs(userId: string, groupId: string, date: string) {
-  const items = await RoutineItem.find({ groupId, userId, isActive: true })
+  const allItems = await RoutineItem.find({ groupId, userId, isActive: true })
     .sort({ order: 1 })
     .lean();
+  // Off-schedule items (scheduledDays doesn't include this date's weekday)
+  // never get a log today and shouldn't be considered by either caller
+  // below — otherwise a session could stall waiting on an item that will
+  // never resolve today, or auto-advance would land on one.
+  const items = allItems.filter((i) => isItemVisibleOn(i, date));
   if (items.length === 0) return { items, logs: [] as Array<{ routineItemId: { toString(): string }; state: string }> };
 
   const logs = await RoutineLog.find({

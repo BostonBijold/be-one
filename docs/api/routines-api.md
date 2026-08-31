@@ -32,7 +32,7 @@ Response: `{ hasNext: boolean, hasLogs: boolean }` — `hasLogs` is true if *any
 
 Collection: `routineitems`. Schema (`models/RoutineItem.ts`): `groupId` (ref), `userId`, `templateId: ObjectId | null` (ref `HabitTemplate`), `name`, `icon` (default `"✓"`), `projectedMinutes` (default `0`), `order`, `isActive` (default `true`), `linkedGoalId: ObjectId | null`, `itemType: "standard" | "stopwatch" | "checkbox" | "virtue_checkin" | "weekly_review" | "routine_review"` (default `"standard"`), `scheduledDays: number[]` (0=Sun..6=Sat, default `[0,1,2,3,4,5,6]`), `successThreshold: number` (how many of this week's *scheduled* days count as a win, default `7`).
 
-`scheduledDays`/`successThreshold` are purely a weekly analytics/streak concept (see [`features/routines.md`](../features/routines.md#streaks--variance) and [`features/analytics.md`](../features/analytics.md)) — they never affect whether an item appears in the Today view or whether a `RoutineGroup` reads as complete for the day; an item still shows and still needs an explicit Done/Missed/Rest every day regardless of its schedule.
+`successThreshold` is purely a weekly analytics/streak concept (see [`features/routines.md`](../features/routines.md#streaks--variance) and [`features/analytics.md`](../features/analytics.md)) — it never affects whether an item appears in the Today view. `scheduledDays` drives *both*: the same field feeds the weekly analytics math **and** Today-view visibility via `lib/routine-visibility.ts`'s `isItemVisibleOn` — an item whose `scheduledDays` excludes today's weekday doesn't appear (and doesn't need a Done/Missed/Rest tap) in the Today view for that date, though it's still returned by this endpoint and can still be logged as a stray entry if the user deliberately expands an "off today" group. See [`features/routines.md`](../features/routines.md#off-schedule-groups) for the group-level "off today" collapsed state this produces when every item in a group is off-schedule.
 
 **Backward compatibility**: these two fields were added after many items already existed. Mongoose schema defaults only apply on document creation, so a `.lean()` read of a pre-existing item can come back with them `undefined` — every server read site that builds an item for the client falls back explicitly (`scheduledDays ?? [0,1,2,3,4,5,6]`, `successThreshold ?? (scheduledDays?.length ?? 7)`) rather than trusting the field is present.
 
@@ -44,11 +44,13 @@ Behavior: appends at the end of the group (`order` = current max + 1). Forces `p
 Response: `{ _id, name, icon, projectedMinutes, order, scheduledDays, successThreshold }`.
 
 ### `PATCH /api/routine-items/[id]`
-Request body: any subset of `{ name, icon, projectedMinutes, itemType, scheduledDays, successThreshold }` — only these six keys are read and applied via `$set`; anything else in the body is ignored. `404` if not found.
+Request body: any subset of `{ name, icon, projectedMinutes, itemType, scheduledDays, successThreshold, groupId }` — only these seven keys are read and applied via `$set`; anything else in the body is ignored. `404` if not found.
 
 If either `scheduledDays` or `successThreshold` is present, the threshold is re-clamped against whichever `scheduledDays` is now in effect (the one just sent, or the item's existing one if only the threshold changed) — same silent-clamp behavior as `POST`. Clamping only ever lowers the threshold to fit a shrunk schedule; it never bumps a deliberately-lowered threshold back up just because `scheduledDays` changed for an unrelated reason (e.g. a day was re-added).
 
-Response: `{ _id, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold }`.
+If `groupId` is present and differs from the item's current `groupId` (moving it to a different group — this is also how an item is moved to or from the standalone Habits group, which is just a `RoutineGroup` with `timeOfDay: "habit"`): the destination group must exist and belong to the authenticated user (`404` otherwise, same ownership check every other group-scoped route uses), `order` is set to the current max `order` in the destination group + 1 (append at the end — same convention as `POST`), and any of the item's `RoutineLog`s currently `in_progress` or `paused` have their `sessionGroupId` cleared to `null` (it would otherwise anchor a resume into a `RoutineSession` for a group the item no longer belongs to; clearing it falls back to the standalone timer resume). No `RoutineLog` history is touched otherwise — `RoutineLog` isn't scoped to `groupId` at all (see above), so a move is purely this one field update on the item.
+
+Response: `{ _id, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold, groupId }`.
 
 ### `DELETE /api/routine-items/[id]`
 **Soft delete** — sets `isActive: false` and saves; the document (and its full `RoutineLog` history) is never physically removed. Response: `{ ok: true }`.

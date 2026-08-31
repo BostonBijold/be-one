@@ -43,6 +43,8 @@ export default async function EditRoutinePage({
     appIntentLinks.map((l) => [l.routineItemId.toString(), l.lastTriggeredAt.toISOString()])
   );
 
+  const groups = await RoutineGroup.find({ userId }).sort({ order: 1 }).lean();
+
   return (
     <RoutineEditView
       group={{
@@ -50,6 +52,7 @@ export default async function EditRoutinePage({
         name: group.name,
         startTime: group.startTime ?? null,
       }}
+      groups={groups.map((g) => ({ _id: g._id.toString(), name: g.name }))}
       items={items.map((i) => ({
         _id: i._id.toString(),
         name: i.name,

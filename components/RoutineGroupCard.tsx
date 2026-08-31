@@ -132,6 +132,14 @@ export default function RoutineGroupCard({
     [group.items, selectedDate]
   );
 
+  // Every item in the group is off-schedule for selectedDate — nothing to
+  // log today. Renders as a collapsed "Off today" note instead of the
+  // normal item list/progress summary, but stays tappable to expand and
+  // show the full (off-schedule) item list in case the user wants to log a
+  // stray entry anyway.
+  const allOffToday = group.items.length > 0 && visibleItems.length === 0;
+  const itemsToRender = allOffToday ? group.items : visibleItems;
+
   // in_progress doesn't count as complete — the item is actively being timed
   const isComplete = visibleItems.length > 0 && visibleItems.every((i) => {
     const s = logs[i._id]?.state;
@@ -141,6 +149,7 @@ export default function RoutineGroupCard({
   // Past dates: always start expanded so history is visible
   // Today: expand while inside the time window, collapse before it opens or after it closes
   const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (allOffToday) return true;
     if (isPastDate) return false;
     if (isComplete) return true;
     if (inWindow || beforeWindow) return false; // active or upcoming → start open
@@ -168,9 +177,12 @@ export default function RoutineGroupCard({
     variance > 5 ? "text-tobacco" : variance < -5 ? "text-olive-light" : "text-muted";
 
   const isHabitGroup = group.timeOfDay === "habit";
-  // Habit groups never collapse — each card shows its own state directly
-  const effectivelyCollapsed = isCollapsed && !isHabitGroup;
-  const toggle = () => { if (!isHabitGroup) setIsCollapsed((c) => !c); setExpandedItemId(null); };
+  // Habit groups never collapse — each card shows its own state directly —
+  // except when every item in the group is off-schedule today, in which
+  // case there's nothing to show inline and it collapses to the same
+  // "Off today" note as any other group.
+  const effectivelyCollapsed = allOffToday ? isCollapsed : isCollapsed && !isHabitGroup;
+  const toggle = () => { if (allOffToday || !isHabitGroup) setIsCollapsed((c) => !c); setExpandedItemId(null); };
 
   // Back-entry UX (Done + minutes input instead of timer) applies when:
   // - it's a different calendar day, OR
@@ -183,7 +195,11 @@ export default function RoutineGroupCard({
       <div className="flex items-center justify-between mb-3 min-h-[44px]">
         <button className="flex items-center gap-2 text-left flex-1" onClick={toggle}>
           <h2 className="font-heading text-lg text-text">{group.name}</h2>
-          {isComplete && !isPastDate ? (
+          {allOffToday ? (
+            <span className="font-mono text-[10px] text-dim px-2 py-0.5 rounded-pill border border-border">
+              Off today
+            </span>
+          ) : isComplete && !isPastDate ? (
             <span className="font-mono text-[10px] text-olive bg-olive/10 px-2 py-0.5 rounded-pill">
               ✓ Done
             </span>
@@ -199,7 +215,7 @@ export default function RoutineGroupCard({
         </button>
 
         <div className="flex items-center gap-3">
-          {!isComplete && (
+          {!isComplete && !allOffToday && (
             <span className="font-mono text-xs">
               <span className="text-gold">{doneCount}/{visibleItems.length}</span>
               <span className="text-dim"> · {fmtMins(projectedMins)}</span>
@@ -215,8 +231,18 @@ export default function RoutineGroupCard({
         </div>
       </div>
 
+      {/* ── Collapsed: off-schedule note ───────────────────────────────────── */}
+      {effectivelyCollapsed && allOffToday && (
+        <button
+          onClick={toggle}
+          className="w-full text-left bg-card rounded-card px-4 py-3.5 hover:bg-card-hover transition-colors"
+        >
+          <span className="font-mono text-xs text-dim">Off today · not scheduled</span>
+        </button>
+      )}
+
       {/* ── Collapsed: complete summary ──────────────────────────────────── */}
-      {effectivelyCollapsed && isComplete && (
+      {effectivelyCollapsed && !allOffToday && isComplete && (
         <button
           onClick={toggle}
           className="w-full text-left bg-card rounded-card border-l-[3px] border-olive px-4 py-3.5 hover:bg-card-hover transition-colors"
@@ -263,7 +289,7 @@ export default function RoutineGroupCard({
       )}
 
       {/* ── Collapsed: incomplete icon summary (today, timeframe elapsed) ── */}
-      {effectivelyCollapsed && !isComplete && (
+      {effectivelyCollapsed && !allOffToday && !isComplete && (
         <button
           onClick={toggle}
           className="w-full text-left bg-card rounded-card px-4 py-3.5 flex items-center gap-2 hover:bg-card-hover transition-colors"
@@ -305,7 +331,7 @@ export default function RoutineGroupCard({
         <div>
           {group.timeOfDay === "habit" ? (
             <div className="space-y-2">
-              {visibleItems.map((item) => (
+              {itemsToRender.map((item) => (
                 <HabitItemCard
                   key={item._id}
                   item={item}
@@ -322,7 +348,7 @@ export default function RoutineGroupCard({
             </div>
           ) : (
             <div className="bg-card rounded-card overflow-hidden divide-y divide-border">
-              {visibleItems.map((item) => (
+              {itemsToRender.map((item) => (
                 <RoutineItemRow
                   key={item._id}
                   item={item}

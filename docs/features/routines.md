@@ -12,8 +12,8 @@ The Today/Routines page groups a user's daily habits into time-of-day `RoutineGr
 - **`stopwatch`** — no target; opens the timer in stopwatch (count-up only) mode.
 - **`checkbox`** — no timer at all; a single tap marks it done.
 - **`virtue_checkin`** — opens the virtue check-in modal instead of a timer (not covered by this doc).
-- **`weekly_review`** — only actionable on Sundays; on other days it shows "Sunday habit — skip or rest for today" instead of its normal action panel.
-- **`routine_review`** — same Sunday-only gating as `weekly_review`, but opens the Routine Review flow instead — see [routine-review.md](routine-review.md).
+- **`weekly_review`** — seeded with `scheduledDays: [0]` (Sunday only), so the Today-view visibility rule below already keeps it out of the list on other days. `RoutineItemRow`/`RoutineSession` additionally gate it as only *actionable* on Sundays (a separate, still-hardcoded check, kept for the case an off-schedule item gets viewed anyway — see "Off-schedule groups" below) — on a non-Sunday it shows "Sunday habit — skip or rest for today" instead of its normal action panel rather than opening the weekly review modal.
+- **`routine_review`** — same `scheduledDays: [0]` seeding and Sunday-only actionability gating as `weekly_review`, but opens the Routine Review flow instead — see [routine-review.md](routine-review.md).
 
 ## Log states
 
@@ -49,7 +49,7 @@ Note this is a different week convention than virtue rotation/weekly review, whi
 
 ### Weekly schedule + success threshold
 
-Every `RoutineItem` carries `scheduledDays` (0=Sun..6=Sat, which days it's expected — default every day) and `successThreshold` (how many of this week's *scheduled* days need to be `done`/`rest` to read as 100%, default = the number of scheduled days). Both are set/edited via the schedule row and threshold input in the item's inline edit form (`components/RoutineEditView.tsx`'s `SortableRow`, reached through "⚙ Manage" — see "Reordering & editing groups" below) or at creation time in `AddHabitSheet`'s custom-habit form. **This is purely a weekly-analytics/streak concept** — it never hides an item from the Today view on a non-scheduled day, and never changes whether a `RoutineGroupCard` reads as complete for the day; an item still shows and still needs an explicit Done/Missed/Rest every day regardless of its schedule.
+Every `RoutineItem` carries `scheduledDays` (0=Sun..6=Sat, which days it's expected — default every day) and `successThreshold` (how many of this week's *scheduled* days need to be `done`/`rest` to read as 100%, default = the number of scheduled days). Both are set/edited via the schedule row and threshold input in the item's inline edit form (`components/RoutineEditView.tsx`'s `SortableRow`, reached through "⚙ Manage" — see "Reordering & editing groups" below) or at creation time in `AddHabitSheet`'s custom-habit form. `successThreshold` is purely a weekly-analytics/streak concept and never affects Today-view visibility. **`scheduledDays` drives both** the analytics math below *and* Today-view visibility: `lib/routine-visibility.ts`'s `isItemVisibleOn` hides an item from the Today view entirely on a day outside its `scheduledDays` — it doesn't show and doesn't need a Done/Missed/Rest tap that day. See "Off-schedule groups" below for what happens when every item in a group is off for the day.
 
 The shared math lives in `lib/routine-progress.ts`'s `computeWeeklyProgress` (imported by both `StreakDots` and the Analytics Habit Breakdown, see `analytics.md`, so the two never diverge). Each of the week's 7 days classifies into one of six states — the first two are solid fills ("something happened"), the rest are hollow, no-fill outlines distinguished by border color/style ("needs a look"), deliberately so a close-but-different fill color is never the only thing telling two states apart:
 
@@ -59,6 +59,12 @@ The shared math lives in `lib/routine-progress.ts`'s `computeWeeklyProgress` (im
 - **`unlogged`** — a strictly-past scheduled day with no log at all (hollow, solid grey/dim border, no mark) — a read-time interpretation only, nothing is ever written to the database to represent it
 - **`pending`** — a scheduled day that's today (and not yet resolved) or later this week (hollow, **dashed** grey/dim border — the dash is what separates it from `unlogged`'s solid border)
 - **`not_scheduled`** — a day outside `scheduledDays` entirely (very faint solid fill, no border) — excluded from every count above; a log that happens to exist on a non-scheduled day (e.g. logged anyway) is invisible to this math, not a bonus
+
+### Off-schedule groups
+
+When every item in a `RoutineGroup` is off-schedule for the selected date (`scheduledDays` excludes that weekday for all of them), `RoutineGroupCard` renders the group collapsed by default with a short "Off today · not scheduled" note instead of the normal item list or progress summary — there's nothing to log, so no `X/Y` count or Start Routine button either. Habit groups otherwise never collapse (each `HabitItemCard` shows its own state directly, with no group-level collapse concept at all), but this "off today" note is the one exception, since there'd otherwise be nothing to render inline. The note stays tappable: expanding it shows the group's full item list (including the off-schedule items) with the normal action panel, so the user can still log a stray entry against an off-schedule item if they want to — this is deliberately not read-only.
+
+`isGroupFullyResolved`/`findNextItemInGroup` (`lib/routine-session-actions.ts`) and `GET /api/habits` apply the same `isItemVisibleOn` filter before doing their own group-completion/list-building work, so a session never stalls waiting on an item that won't get a log today, and `FABHabitSheet`'s quick-log list never offers an off-schedule habit.
 
 ### Timing color (done days only)
 
@@ -79,6 +85,12 @@ The resulting percentage (`successCount / successThreshold * 100`) is **uncapped
 - `components/RoutineEditView.tsx` (`app/(app)/routines/[groupId]/edit/page.tsx`) — dedicated group-edit page. Also displays each group's and item's raw Mongo `_id` read-only (`select-all`, no copy button) — these are the ids the [external API](../api/external-api.md) needs to target a specific timer. Its per-item inline edit form (`SortableRow`) is also where `scheduledDays`/`successThreshold` (see "Weekly schedule + success threshold" above) get edited after creation — a day-of-week toggle row plus a threshold input, clamped client-side to never exceed the number of selected days.
 - Deleting an item is a **soft delete** (`isActive: false`, via `DELETE /api/routine-items/[id]`) — history in `RoutineLog` is preserved even after an item is removed from the active list.
 
+### Moving items between groups
+
+`SortableRow`'s inline edit form also has a "Move to" select, listing the user's other `RoutineGroup`s (any routine group, or the standalone Habits group — "move to Habits" and "move to another routine" are the same operation, since Habits is just a `RoutineGroup` with `timeOfDay: "habit"`). Picking one `PATCH`s the item's `groupId` (see [routines-api.md](../api/routines-api.md)) and appends it at the end of the destination; the item then drops out of the current edit screen's local list.
+
+History is preserved automatically — `RoutineLog` keys on `{ userId, routineItemId, date }`, never `groupId`, so a move is purely a `RoutineItem.groupId` update with no log migration needed. `scheduledDays`/`successThreshold` travel with the item untouched, so weekly streak/threshold math keeps working across the move.
+
 ## The "Start Routine" sequential session
 
 Tapping "Start Routine"/"Continue Routine" on a group (not shown for Habit groups) opens `components/RoutineSession.tsx`, which steps through that group's items one at a time in a single full-screen flow rather than expanding rows individually. Each item gets its own server-side `in_progress` record as it becomes current, and closing the session mid-item flushes that item's progress rather than discarding it — full mechanics in [timer.md](timer.md).
@@ -92,7 +104,7 @@ Tapping "Start Routine"/"Continue Routine" on a group (not shown for Habit group
 - `components/RoutineSession.tsx` — sequential multi-item session (see [timer.md](timer.md)).
 - `components/DateNav.tsx` — the `< Today >` date picker driving `selectedDate`.
 - `components/ManageRoutinesSheet.tsx`, `components/RoutineEditView.tsx` — group/item management (also the path for editing a Habit item — see [habits.md](habits.md)).
-- `lib/routine-visibility.ts` — **not** a general recurrence system despite the name suggesting one: today it's a single hardcoded rule (`weekly_review` and `routine_review` items are visible only on Sundays). `scheduledDays`/`successThreshold` (above) are a separate, unrelated concept — they never affect this function or Today-view visibility at all.
+- `lib/routine-visibility.ts` — single source of truth for "does this item show today," `isItemVisibleOn(item, dateStr)`: true when `dateStr`'s weekday is in `item.scheduledDays` (default every day). No itemType-specific rule lives here anymore — `weekly_review`/`routine_review` read as Sunday-only purely because they're seeded with `scheduledDays: [0]` (see "Item types" above). Called from `RoutineGroupCard` (visible items + "off-schedule groups" collapse, above), `RoutinesView` (progress counts, session item list, timer auto-advance), `lib/routine-session-actions.ts` (`isGroupFullyResolved`/`findNextItemInGroup`), and `GET /api/habits`.
 - `lib/routine-progress.ts` — the shared weekly-progress math (see "Weekly schedule + success threshold" above).
 - `lib/seed.ts` — idempotent seeding of default groups/items for new users.
 

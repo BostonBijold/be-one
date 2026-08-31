@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongoose";
 import RoutineGroup from "@/models/RoutineGroup";
 import RoutineItem from "@/models/RoutineItem";
 import RoutineLog from "@/models/RoutineLog";
+import { isItemVisibleOn } from "@/lib/routine-visibility";
 
 export const dynamic = "force-dynamic";
 const DEV_USER_ID = "dev-local-user";
@@ -21,12 +22,13 @@ export async function GET(req: NextRequest) {
   if (!habitGroups.length) return NextResponse.json([]);
 
   const groupIds = habitGroups.map((g) => g._id);
-  const [items, logs] = await Promise.all([
+  const [allItems, logs] = await Promise.all([
     RoutineItem.find({ groupId: { $in: groupIds }, userId, isActive: true })
       .sort({ order: 1 }).lean(),
     RoutineLog.find({ userId, date }).lean(),
   ]);
 
+  const items = allItems.filter((i) => isItemVisibleOn(i, date));
   const logMap = new Map(logs.map((l) => [l.routineItemId.toString(), l]));
 
   return NextResponse.json(

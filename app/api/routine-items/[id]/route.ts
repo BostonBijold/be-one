@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/mongoose";
 import RoutineItem from "@/models/RoutineItem";
+import RoutineGroup from "@/models/RoutineGroup";
+import RoutineLog from "@/models/RoutineLog";
 
 export const dynamic = "force-dynamic";
 
@@ -44,13 +47,23 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const updates = await req.json();
-  const allowed = ["name", "icon", "projectedMinutes", "itemType", "scheduledDays", "successThreshold"] as const;
-  const sanitized: Partial<Record<(typeof allowed)[number], unknown>> = {};
+  const allowed = ["name", "icon", "projectedMinutes", "itemType", "scheduledDays", "successThreshold", "groupId"] as const;
+  // "order" isn't client-settable directly — it's only ever derived below,
+  // when a groupId move appends the item at the end of its destination.
+  const sanitized: Partial<Record<(typeof allowed)[number] | "order", unknown>> = {};
   for (const key of allowed) {
     if (key in updates) sanitized[key] = updates[key];
   }
 
   await connectDB();
+
+  // Fetched once up front whenever a later branch needs the item's current
+  // values (threshold clamping and/or a group move) — avoids two lookups.
+  let existing: { scheduledDays?: number[]; successThreshold?: number; groupId?: mongoose.Types.ObjectId } | null = null;
+  if ("scheduledDays" in sanitized || "successThreshold" in sanitized || "groupId" in sanitized) {
+    existing = await RoutineItem.findOne({ _id: params.id, userId }).lean();
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   // Clamp threshold against whichever scheduledDays is now in effect —
   // the one just sent, or the item's existing one if only the threshold
@@ -59,7 +72,6 @@ export async function PATCH(
   // already was (only clamping it down, never bumping it up to days.length
   // just because scheduledDays changed for an unrelated reason).
   if ("scheduledDays" in sanitized || "successThreshold" in sanitized) {
-    const existing = await RoutineItem.findOne({ _id: params.id, userId }).lean();
     const days = Array.isArray(sanitized.scheduledDays)
       ? (sanitized.scheduledDays as number[])
       : existing?.scheduledDays ?? [0, 1, 2, 3, 4, 5, 6];
@@ -67,6 +79,26 @@ export async function PATCH(
       ? Number(sanitized.successThreshold)
       : existing?.successThreshold ?? days.length;
     sanitized.successThreshold = Math.max(1, Math.min(requestedThreshold, days.length));
+  }
+
+  // Moving to a different group: validate ownership of the destination and
+  // append at the end of its list, same convention as POST /api/routine-items.
+  if ("groupId" in sanitized && String(sanitized.groupId) !== String(existing?.groupId)) {
+    const destGroup = await RoutineGroup.findOne({ _id: sanitized.groupId, userId }).lean();
+    if (!destGroup) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const maxOrder = await RoutineItem.findOne({ groupId: sanitized.groupId, userId, isActive: true })
+      .sort({ order: -1 })
+      .lean();
+    sanitized.order = maxOrder ? maxOrder.order + 1 : 0;
+
+    // Today's in-progress/paused log (if any) may carry a sessionGroupId
+    // anchored to the old group — clear it so resume falls back to the
+    // standalone timer instead of reopening a stale RoutineSession.
+    await RoutineLog.updateMany(
+      { userId, routineItemId: params.id, state: { $in: ["in_progress", "paused"] }, sessionGroupId: { $ne: null } },
+      { $set: { sessionGroupId: null } }
+    );
   }
 
   const item = await RoutineItem.findOneAndUpdate(
@@ -84,5 +116,6 @@ export async function PATCH(
     itemType: item.itemType,
     scheduledDays: item.scheduledDays,
     successThreshold: item.successThreshold,
+    groupId: item.groupId.toString(),
   });
 }

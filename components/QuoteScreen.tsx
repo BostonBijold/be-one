@@ -28,13 +28,22 @@ const TEXT_SIZE: Record<LengthTier, string> = {
   long: "text-lg leading-relaxed",
 };
 
-function todayLocalDate() {
-  return new Date().toLocaleDateString("sv"); // YYYY-MM-DD in local time
-}
+// Fixed splash quote — shown instantly on cold launch instead of fetching,
+// so there's never a loading placeholder underneath the app shell.
+const SPLASH_QUOTE: QuoteDTO = {
+  _id: "splash",
+  text: "Waste no more time arguing what it means to be a good man. Be one.",
+  author: "Marcus Aurelius",
+  genre: "stoic",
+  virtue: null,
+  virtueDayIndex: null,
+  source: null,
+  lengthTier: "medium",
+};
 
 export default function QuoteScreen({ mode, onDismiss }: Props) {
-  const [quote, setQuote] = useState<QuoteDTO | null>(null);
-  const [fetching, setFetching] = useState(true);
+  const [quote, setQuote] = useState<QuoteDTO | null>(mode === "loading" ? SPLASH_QUOTE : null);
+  const [fetching, setFetching] = useState(mode !== "loading");
   // The /routines page this screen sits on top of is server-rendered with
   // its data already in the same response this component hydrates from, so
   // there's no separate client fetch to wait on today — this flips true on
@@ -46,16 +55,18 @@ export default function QuoteScreen({ mode, onDismiss }: Props) {
   const [dataReady, setDataReady] = useState(mode === "on-demand");
   const [closing, setClosing] = useState(false);
 
+  // Only used by on-demand mode (FAB / nav quote) — the loading splash
+  // never fetches, it renders SPLASH_QUOTE immediately.
   const fetchQuote = () => {
     setFetching(true);
-    const url = mode === "loading" ? `/api/quotes/today?date=${todayLocalDate()}` : "/api/quotes/random";
-    fetch(url)
+    fetch("/api/quotes/random")
       .then((r) => r.json())
       .then((data: { quote: QuoteDTO | null }) => setQuote(data.quote))
       .finally(() => setFetching(false));
   };
 
   useEffect(() => {
+    if (mode === "loading") return; // static SPLASH_QUOTE — no fetch needed
     fetchQuote();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

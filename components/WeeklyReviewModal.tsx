@@ -12,6 +12,12 @@ interface Score {
   pct: number;
 }
 
+interface NextVirtue {
+  displayName: string;
+  tagline: string;
+  etymology: string;
+}
+
 interface Props {
   date: string; // selectedDate (must be Sunday)
   currentVirtue: { name: string; displayName: string; order: number } | null;
@@ -24,6 +30,7 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
   const [scores, setScores] = useState<Score[]>([]);
   const [checkInDays, setCheckInDays] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [nextVirtue, setNextVirtue] = useState<NextVirtue | null>(null);
 
   const ws = weekStartDate(new Date(date + "T12:00:00"));
 
@@ -55,6 +62,17 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
         setLoading(false);
       });
   }, [ws]);
+
+  useEffect(() => {
+    fetch(`/api/virtues`)
+      .then((r) => r.json())
+      .then((virtues: Array<{ order: number; displayName: string; tagline: string; etymology: string }>) => {
+        const match = virtues.find((v) => v.order === nextVirtueOrder);
+        if (match) {
+          setNextVirtue({ displayName: match.displayName, tagline: match.tagline, etymology: match.etymology });
+        }
+      });
+  }, [nextVirtueOrder]);
 
   const strongest = scores[0] ?? null;
   const needsWork = scores[scores.length - 1] ?? null;
@@ -146,12 +164,25 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
                   <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">
                     Next Week
                   </p>
-                  <p className="font-body text-sm text-text">
-                    Virtue #{nextVirtueOrder} begins Monday
-                  </p>
-                  <p className="font-mono text-[10px] text-dim mt-0.5">
-                    Check the Virtues tab for details
-                  </p>
+                  {nextVirtue ? (
+                    <>
+                      <h3 className="font-heading text-base italic text-text">
+                        {nextVirtue.displayName}
+                      </h3>
+                      {nextVirtue.tagline && (
+                        <p className="font-body text-sm text-muted mt-1">{nextVirtue.tagline}</p>
+                      )}
+                      {nextVirtue.etymology && (
+                        <p className="font-body text-xs text-dim mt-2 leading-relaxed">
+                          {nextVirtue.etymology}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="font-body text-sm text-text">
+                      Virtue #{nextVirtueOrder} begins Monday
+                    </p>
+                  )}
                 </div>
               </>
             )}

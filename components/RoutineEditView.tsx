@@ -40,6 +40,7 @@ export interface EditItem {
 interface Props {
   group: { _id: string; name: string; startTime: string | null };
   items: EditItem[];
+  groups: { _id: string; name: string }[];
 }
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"]; // Sun..Sat, matches calendarWeekDates order
@@ -52,6 +53,8 @@ function SortableRow({
   onToggleEdit,
   onSave,
   onRemove,
+  otherGroups,
+  onMove,
 }: {
   item: EditItem;
   isEditing: boolean;
@@ -65,6 +68,8 @@ function SortableRow({
     successThreshold: number
   ) => Promise<void>;
   onRemove: () => Promise<void>;
+  otherGroups: { _id: string; name: string }[];
+  onMove: (groupId: string) => Promise<void>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item._id });
@@ -83,6 +88,7 @@ function SortableRow({
   const [editScheduledDays, setEditScheduledDays] = useState<number[]>(item.scheduledDays);
   const [editThreshold, setEditThreshold] = useState(item.successThreshold);
   const [saving, setSaving] = useState(false);
+  const [moving, setMoving] = useState(false);
 
   function toggleEditDay(day: number) {
     setEditScheduledDays((prev) => {
@@ -97,6 +103,15 @@ function SortableRow({
     const mins = editType === "standard" ? (parseInt(editMins) || item.projectedMinutes) : 0;
     await onSave(editName.trim() || item.name, editIcon || item.icon, mins, editType, editScheduledDays, editThreshold);
     setSaving(false);
+  };
+
+  const handleMove = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const groupId = e.target.value;
+    if (!groupId) return;
+    setMoving(true);
+    await onMove(groupId);
+    // No need to reset `moving` — a successful move removes this row from
+    // the list entirely (see handleMoveItem), so this component unmounts.
   };
 
   return (
@@ -264,6 +279,31 @@ function SortableRow({
             {saving ? "Saving…" : "Save changes"}
           </button>
 
+          {/* Move to another group — history stays with the item (RoutineLog
+              isn't scoped to groupId), so this is safe at any time. */}
+          {otherGroups.length > 0 && (
+            <div>
+              <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+                Move to
+              </label>
+              <select
+                value=""
+                onChange={handleMove}
+                disabled={moving}
+                className="w-full bg-bg border border-border rounded-card px-3 py-2 font-body text-sm text-text outline-none focus:border-olive disabled:opacity-50"
+              >
+                <option value="" disabled>
+                  {moving ? "Moving…" : "Choose a group…"}
+                </option>
+                {otherGroups.map((g) => (
+                  <option key={g._id} value={g._id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Siri & Shortcuts connection — there's no way to detect a
               Shortcut was *built* for this habit (Apple gives no hook for
               that), only that one has *run* — so this reflects usage, not
@@ -295,11 +335,13 @@ function SortableRow({
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export default function RoutineEditView({ group, items: initialItems }: Props) {
+export default function RoutineEditView({ group, items: initialItems, groups }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<EditItem[]>(initialItems);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
+
+  const otherGroups = groups.filter((g) => g._id !== group._id);
 
   // Group schedule state
   const [startTime, setStartTime] = useState(group.startTime ?? "");
@@ -367,6 +409,18 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
     setItems((prev) => prev.filter((it) => it._id !== id));
     await fetch(`/api/routine-items/${id}`, { method: "DELETE" });
     router.refresh();
+  };
+
+  const handleMoveItem = async (id: string, groupId: string) => {
+    setEditingId(null);
+    // It no longer belongs on this group's edit screen once moved.
+    setItems((prev) => prev.filter((it) => it._id !== id));
+    await fetch(`/api/routine-items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId }),
+    });
+    router.refresh(); // invalidate routines page cache for both groups
   };
 
   const handleAdd = async (
@@ -492,6 +546,8 @@ export default function RoutineEditView({ group, items: initialItems }: Props) {
                     }
                     onSave={(name, icon, mins, type, days, threshold) => handleSaveItem(item._id, name, icon, mins, type, days, threshold)}
                     onRemove={() => handleRemove(item._id)}
+                    otherGroups={otherGroups}
+                    onMove={(groupId) => handleMoveItem(item._id, groupId)}
                   />
                 ))}
               </div>

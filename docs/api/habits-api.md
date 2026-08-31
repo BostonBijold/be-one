@@ -12,7 +12,7 @@ Powers `FABHabitSheet`'s quick-log list. Only `GET` is implemented on this route
 
 Query param: `date` (`YYYY-MM-DD`) — **defaults to the server's UTC date if omitted**, not the client's local date. Callers that need "today" in the user's timezone must pass `date` explicitly (as `FABHabitSheet` does).
 
-Logic: finds all of the user's `RoutineGroup`s with `timeOfDay: "habit"`; loads every active `RoutineItem` in those groups plus every `RoutineLog` for the user on that date; joins them in the route handler by `routineItemId` (a plain JS `Map` lookup, not a Mongo-side `$lookup`).
+Logic: finds all of the user's `RoutineGroup`s with `timeOfDay: "habit"`; loads every active `RoutineItem` in those groups plus every `RoutineLog` for the user on that date; filters the items down to those visible on `date` via `lib/routine-visibility.ts`'s `isItemVisibleOn` (i.e. `scheduledDays` includes that date's weekday) before joining them in the route handler by `routineItemId` (a plain JS `Map` lookup, not a Mongo-side `$lookup`) — an off-schedule habit item is simply absent from the response, so `FABHabitSheet`'s quick-log list never offers a habit that isn't scheduled for `date`.
 
 Response: array of
 ```ts

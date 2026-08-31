@@ -11,6 +11,8 @@ import {
   ChevronUp,
   Pencil,
   X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -443,6 +445,8 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(goal.name);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  // Session-only — resets on reload, no persistence needed per the brief.
+  const [hideCompleted, setHideCompleted] = useState(false);
   const msRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -503,14 +507,26 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
   if (totalTasks > 0)    progressLabel += ` — ${doneTasks} of ${totalTasks} tasks done`;
   else if (totalMs > 0)  progressLabel += ` — ${doneMs} of ${totalMs} milestones`;
 
+  const visibleMilestones = hideCompleted
+    ? goal.milestones.filter((m) => !m.complete)
+    : goal.milestones;
+
   return (
     <div className="min-h-dvh bg-bg">
-      <div className="mx-auto max-w-mobile px-4 pb-24">
-        {/* ── Back + title ── */}
-        <div className="flex items-center gap-3 pt-6 pb-5">
+      {/* ── Sticky back + title + completed-milestones toggle ──
+          top: 0 relative to .app-scroll's scrollport, matching the fixed
+          Header's own top-offset convention (env(safe-area-inset-top),
+          full-bleed bg-bg + border-b with centered inner content) — this
+          page just has no shared Header to reserve that space, so the
+          sticky bar itself fills it once scrolled to the top. */}
+      <div
+        className="sticky top-0 z-30 bg-bg border-b border-border"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="mx-auto max-w-mobile px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="text-dim hover:text-muted min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2"
+            className="text-dim hover:text-muted flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2"
           >
             <ArrowLeft size={20} />
           </button>
@@ -530,14 +546,27 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
             />
           ) : (
             <h1
-              className="flex-1 font-heading text-xl text-text leading-tight cursor-pointer"
+              className="flex-1 font-heading text-xl text-text leading-tight cursor-pointer truncate"
               onClick={() => setEditingName(true)}
             >
               {goal.name}
             </h1>
           )}
-        </div>
 
+          <button
+            onClick={() => setHideCompleted((v) => !v)}
+            className={`flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
+              hideCompleted ? "text-olive" : "text-dim hover:text-muted"
+            }`}
+            title={hideCompleted ? "Show completed milestones" : "Hide completed milestones"}
+            aria-pressed={hideCompleted}
+          >
+            {hideCompleted ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-mobile px-4 pt-5 pb-24">
         {/* ── Status + target date ── */}
         <div className="flex items-center gap-3 mb-6">
           <div className="relative">
@@ -656,8 +685,18 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
             </p>
           )}
 
+          {goal.milestones.length > 0 && visibleMilestones.length === 0 && (
+            <p className="font-body text-sm text-dim px-1 mb-3">
+              All milestones complete —{" "}
+              <button onClick={() => setHideCompleted(false)} className="underline text-muted hover:text-text">
+                show them
+              </button>
+              .
+            </p>
+          )}
+
           <div className="space-y-2">
-            {goal.milestones.map((m) => (
+            {visibleMilestones.map((m) => (
               <MilestoneCard
                 key={m._id}
                 milestone={m}
