@@ -6,15 +6,17 @@ import { Capacitor } from "@capacitor/core";
 import { Copy, Check } from "lucide-react";
 import Header from "@/components/Header";
 import { ApiKeyBridge } from "@/lib/native/api-key-bridge";
+import ChangePasswordForm from "@/components/ChangePasswordForm";
 
 interface Props {
   name: string;
   email: string;
   today: string;
   skipAuth: boolean;
+  hasPassword: boolean;
 }
 
-export default function ProfileView({ name, email, today, skipAuth }: Props) {
+export default function ProfileView({ name, email, today, skipAuth, hasPassword }: Props) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -59,6 +61,16 @@ export default function ProfileView({ name, email, today, skipAuth }: Props) {
               </div>
             </div>
           </div>
+
+          {/* Change password — only for accounts with a password set */}
+          {hasPassword && (
+            <div className="bg-card rounded-card border border-border p-5">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+                Change Password
+              </p>
+              <ChangePasswordForm />
+            </div>
+          )}
 
           {/* External API key */}
           <div className="bg-card rounded-card border border-border p-5">

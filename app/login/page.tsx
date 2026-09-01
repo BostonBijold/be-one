@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
+import SignInForm from "@/components/SignInForm";
 
 export default async function LoginPage({
   searchParams,
@@ -37,7 +39,22 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="text-muted text-xs text-center mt-10">
+        <div className="flex items-center gap-3 my-6">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-dim text-xs font-body">or</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <SignInForm redirectTo={destination} />
+
+        <p className="text-muted text-xs text-center mt-6">
+          Don&apos;t have an account?{" "}
+          <Link href={`/signup?callbackUrl=${encodeURIComponent(destination)}`} className="text-gold hover:underline">
+            Sign up
+          </Link>
+        </p>
+
+        <p className="text-muted text-xs text-center mt-4">
           Your data is private to your account.
         </p>
       </div>

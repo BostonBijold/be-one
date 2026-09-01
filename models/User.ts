@@ -4,6 +4,10 @@ import { Schema, model, models } from "mongoose";
 // Do not redeclare fields the adapter owns (email, name, image, emailVerified).
 const UserSchema = new Schema(
   {
+    // Set only for accounts created via email/password signup (see
+    // lib/auth-actions.ts). Null for Google-only accounts — their presence
+    // is what lets the Credentials provider tell the two apart.
+    passwordHash: { type: String, default: null },
     virtueWalkthroughSeen: { type: Boolean, default: false },
     // Which Philosophy (virtue set) this user has picked as their active
     // focus — null until they choose one via the Virtues-page marketplace.
