@@ -20,6 +20,14 @@ export interface IRoutineItem extends Document {
   // as 100% — never allowed to exceed scheduledDays.length (see the API
   // routes, which clamp on write; this field alone doesn't enforce it).
   successThreshold: number;
+  // "Do you need to do this today?" — for habits that are needed
+  // irregularly (shaving, a haircut-length check, etc.) rather than on a
+  // fixed weekly cadence. Unlike scheduledDays (which fixes specific days
+  // in advance), this asks fresh each time the item is reached and isn't
+  // decided yet for today — see RoutineItemRow/RoutineSession's isConditional
+  // gating and lib/projected-finish.ts's remainingMinutes, which excludes an
+  // undecided conditional item from the live time estimate until answered.
+  isConditional: boolean;
 }
 
 const RoutineItemSchema = new Schema<IRoutineItem>(
@@ -36,6 +44,7 @@ const RoutineItemSchema = new Schema<IRoutineItem>(
     itemType: { type: String, enum: ["standard", "stopwatch", "checkbox", "virtue_checkin", "weekly_review", "routine_review"], default: "standard" },
     scheduledDays: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
     successThreshold: { type: Number, default: 7 },
+    isConditional: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

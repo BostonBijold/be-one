@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const userId = resolveUserId(session?.user?.id);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { groupId, templateId, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold } = await req.json();
+  const { groupId, templateId, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold, isConditional } = await req.json();
 
   if (!groupId || !name?.trim() || !icon) {
     return NextResponse.json({ error: "groupId, name, and icon required" }, { status: 400 });
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     linkedGoalId: null,
     scheduledDays: days,
     successThreshold: threshold,
+    isConditional: isConditional === true,
   });
 
   return NextResponse.json({
@@ -60,7 +61,9 @@ export async function POST(req: NextRequest) {
     icon: item.icon,
     projectedMinutes: item.projectedMinutes,
     order: item.order,
+    itemType: item.itemType,
     scheduledDays: item.scheduledDays,
     successThreshold: item.successThreshold,
+    isConditional: item.isConditional,
   });
 }

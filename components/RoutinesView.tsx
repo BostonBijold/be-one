@@ -112,7 +112,11 @@ export default function RoutinesView({
       outer: for (const g of routineGroups) {
         const visible = g.items.filter((i) => isItemVisibleOn(i, today));
         for (const item of visible) {
-          if (!logsMap[item._id]) { found = item; break outer; }
+          // Conditional items ("do you need to shave today?") can't be
+          // auto-started — they need a Yes/No answer first, which only the
+          // row/RoutineSession UI can ask. Skip past to the next real habit;
+          // the user can address it from the list when they reach it.
+          if (!logsMap[item._id] && !item.isConditional) { found = item; break outer; }
         }
       }
       if (found) { setTimerInitialElapsed(0); setTimerItem(found); }
@@ -497,19 +501,40 @@ export default function RoutinesView({
     [logs, selectedDate, groups, findGroupName]
   );
 
-  // PATCH the in_progress log to done. Server derives actualMinutes from startedAt.
-  // Falls back to client-computed actualMinutes if no server timestamp exists.
+  // PATCH the in_progress log to done. Server derives actualMinutes from startedAt
+  // by default — but that clock ran the whole time regardless of TimerScreen's
+  // own Pause button (which only freezes the local display, see its own
+  // comment), so once the user has manually corrected the elapsed time there,
+  // trusting the server's own startedAt would silently discard that
+  // correction. elapsedOverrideSeconds is only set in that case; when it is,
+  // send explicit startedAt/completedAt instead of a bare actualMinutes,
+  // routing through the same manual-time-edit PATCH branch handleStateChange
+  // above already uses for back-entry.
   const handleTimerComplete = useCallback(
-    async (actualMinutes: number) => {
+    async (actualMinutes: number, elapsedOverrideSeconds?: number) => {
       if (!timerItem) return;
       setLogs((l) => ({
         ...l,
         [timerItem._id]: { ...(l[timerItem._id] ?? { _id: "", routineItemId: timerItem._id, date: selectedDate }), state: "done", actualMinutes },
       }));
+      const body =
+        elapsedOverrideSeconds != null
+          ? (() => {
+              const completedAt = new Date();
+              const startedAt = new Date(completedAt.getTime() - elapsedOverrideSeconds * 1000);
+              return {
+                routineItemId: timerItem._id,
+                date: selectedDate,
+                state: "done",
+                startedAt: startedAt.toISOString(),
+                completedAt: completedAt.toISOString(),
+              };
+            })()
+          : { routineItemId: timerItem._id, date: selectedDate, state: "done", actualMinutes };
       const res = await fetch("/api/routine-logs", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ routineItemId: timerItem._id, date: selectedDate, state: "done", actualMinutes }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const saved: RoutineLogEntry = await res.json();
@@ -561,7 +586,8 @@ export default function RoutinesView({
       projectedMinutes: number,
       itemType: "standard" | "stopwatch" | "checkbox" = "standard",
       scheduledDays: number[] = [0, 1, 2, 3, 4, 5, 6],
-      successThreshold: number = 7
+      successThreshold: number = 7,
+      isConditional: boolean = false
     ) => {
       if (!addHabitGroup) return;
       await fetch("/api/routine-items", {
@@ -576,6 +602,7 @@ export default function RoutinesView({
           itemType,
           scheduledDays,
           successThreshold,
+          isConditional,
         }),
       });
       setAddHabitGroup(null);

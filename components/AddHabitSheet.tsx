@@ -24,7 +24,8 @@ interface Props {
     projectedMinutes: number,
     itemType: "standard" | "stopwatch" | "checkbox",
     scheduledDays: number[],
-    successThreshold: number
+    successThreshold: number,
+    isConditional?: boolean
   ) => Promise<void>;
   onClose: () => void;
 }
@@ -57,6 +58,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
   const [customType, setCustomType] = useState<"standard" | "stopwatch" | "checkbox">("standard");
   const [customScheduledDays, setCustomScheduledDays] = useState<number[]>(ALL_DAYS);
   const [customThreshold, setCustomThreshold] = useState(7);
+  const [customConditional, setCustomConditional] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function toggleCustomDay(day: number) {
@@ -117,7 +119,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
       }),
     });
     const template = await res.json();
-    await onAdd(template._id, template.name, template.icon, template.defaultProjectedMinutes, customType, customScheduledDays, customThreshold);
+    await onAdd(template._id, template.name, template.icon, template.defaultProjectedMinutes, customType, customScheduledDays, customThreshold, customConditional);
     setSaving(false);
   };
 
@@ -333,6 +335,33 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Conditional — asked fresh each day instead of following a fixed schedule */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setCustomConditional((c) => !c)}
+                    className="w-full flex items-center justify-between bg-bg border border-border rounded-card px-3 py-2.5"
+                  >
+                    <span className="text-left">
+                      <span className="font-body text-sm text-text block">Ask each day instead</span>
+                      <span className="font-mono text-[9px] text-dim">
+                        &ldquo;Do you need to {customName.trim() || "…"} today?&rdquo; — Yes starts it, No counts as rest
+                      </span>
+                    </span>
+                    <span
+                      className={`flex-shrink-0 ml-3 w-10 h-6 rounded-full transition-colors relative ${
+                        customConditional ? "bg-olive" : "bg-border-light"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-text transition-transform ${
+                          customConditional ? "translate-x-[18px]" : "translate-x-0.5"
+                        }`}
+                      />
+                    </span>
+                  </button>
                 </div>
 
                 {/* Threshold */}

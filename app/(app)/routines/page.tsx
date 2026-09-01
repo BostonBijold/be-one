@@ -130,6 +130,7 @@ export default async function RoutinesPage({
         // apply on create, so a .lean() read can come back undefined.
         scheduledDays: item.scheduledDays ?? [0, 1, 2, 3, 4, 5, 6],
         successThreshold: item.successThreshold ?? (item.scheduledDays?.length ?? 7),
+        isConditional: item.isConditional ?? false,
       })),
     };
   });

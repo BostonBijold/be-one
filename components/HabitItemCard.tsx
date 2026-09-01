@@ -170,6 +170,56 @@ export default function HabitItemCard({
   }
 
   // ── Pending state ──────────────────────────────────────────────────────────
+
+  // Conditional habit ("Do you need to shave today?") — not scheduled by
+  // day, decided fresh each time it's shown. Replaces the primary action +
+  // skip options entirely: Yes routes into exactly what Start/Done would
+  // have; No logs it as a rest day directly. See models/RoutineItem.ts's
+  // isConditional and RoutineItemRow.tsx's matching gate for the routine-group
+  // version of this same card.
+  if (item.isConditional) {
+    return (
+      <div className="bg-card rounded-card px-4 py-3.5 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-7 flex items-center justify-center flex-shrink-0">
+            <HabitIcon name={item.icon} size={17} className="text-muted" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-body text-sm text-text leading-tight">{item.name}</p>
+            <div className="mt-1.5">
+              <StreakDots
+                logs={weekLogs}
+                dates={weekDates}
+                today={today}
+                viewingDate={selectedDate}
+                scheduledDays={item.scheduledDays}
+                successThreshold={item.successThreshold}
+                targetMinutes={isTimed ? item.projectedMinutes : null}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="ml-10 space-y-2">
+          <p className="font-mono text-xs text-muted">Do you need to {item.name} today?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => (isCheckbox ? onStateChange("done", { isBackEntry }) : onStartTimer())}
+              className="flex-1 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-olive py-2 rounded-card text-xs font-body font-medium transition-colors min-h-[36px]"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => onStateChange("rest", { isBackEntry })}
+              className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-2 rounded-card text-xs font-body transition-colors min-h-[36px]"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card rounded-card px-4 py-3.5 space-y-3">
       {/* Top row: icon + name + primary action */}

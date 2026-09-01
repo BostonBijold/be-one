@@ -64,6 +64,7 @@ export default async function EditRoutinePage({
         // apply on create, so a .lean() read can come back undefined.
         scheduledDays: i.scheduledDays ?? [0, 1, 2, 3, 4, 5, 6],
         successThreshold: i.successThreshold ?? (i.scheduledDays?.length ?? 7),
+        isConditional: i.isConditional ?? false,
         appIntentLastTriggeredAt: appIntentByItemId.get(i._id.toString()) ?? null,
       }))}
     />

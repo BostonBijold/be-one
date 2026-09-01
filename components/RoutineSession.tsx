@@ -110,6 +110,14 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
   const [phase, setPhase] = useState<"running" | "summary">("running");
   const [specialModalOpen, setSpecialModalOpen] = useState(false);
+  // Whether this item's "Do you need to do this today?" gate has been
+  // answered Yes for the current visit — see isConditionalPending below.
+  // Reset per item alongside specialModalOpen, not persisted server-side:
+  // the item is already in_progress the moment the session lands on it
+  // (see the per-item effect), so re-asking after a background/foreground
+  // cycle within the same visit is a rare, low-stakes edge case, not
+  // something worth a second server round-trip to avoid.
+  const [conditionalDecided, setConditionalDecided] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Latest known state of every item's log today, from any source — this
   // session's own actions, an external API call, or a manual tap elsewhere.
@@ -130,10 +138,15 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
   const isSunday = new Date(today + "T12:00:00").getDay() === 0;
   const specialAvailableToday = isVirtueCheckin || ((isWeeklyReview || isRoutineReview) && isSunday);
   const isCountdown = !isCheckbox && !isStopwatch && !isSpecial;
+  // Gates the ring/checkbox UI behind a "Do you need to do this today?"
+  // Yes/No prompt for habits that aren't needed every time (shaving, etc.)
+  // — see models/RoutineItem.ts's isConditional. Saying No routes straight
+  // through handleRest, same as the normal Rest button elsewhere.
+  const isConditionalPending = !!currentItem?.isConditional && !isSpecial && !conditionalDecided;
 
   // Reaching a new item always starts clean — a stale "check-in open" flag
   // left over from the previous item would otherwise pop the wrong modal.
-  useEffect(() => { setSpecialModalOpen(false); }, [currentIndex]);
+  useEffect(() => { setSpecialModalOpen(false); setConditionalDecided(false); }, [currentIndex]);
 
   const target = isCountdown ? (currentItem?.projectedMinutes ?? 0) * 60 : 0;
   const isOver = isCountdown && target > 0 && elapsed >= target;
@@ -376,7 +389,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                 actualMinutes: rec.state === "done" ? rec.actualMinutes : undefined,
               };
             }
-            return { projectedMinutes: it.projectedMinutes, state: "pending" };
+            return { projectedMinutes: it.projectedMinutes, state: "pending", isConditional: it.isConditional };
           });
           const nowMs = Date.now();
           const timeline = computeTimeline(
@@ -689,7 +702,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
         actualMinutes: ext.state === "done" ? (ext.actualMinutes ?? 0) : undefined,
       };
     }
-    return { projectedMinutes: item.projectedMinutes, state: "pending" };
+    return { projectedMinutes: item.projectedMinutes, state: "pending", isConditional: item.isConditional };
   });
   // Single "now" sample shared by both the projected-finish label and the
   // timeline below, so the two never disagree by even the few ms between
@@ -771,6 +784,34 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
         />
       </div>
 
+      {isConditionalPending ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4">
+          <div className="text-center px-4">
+            <div className="flex justify-center mb-3">
+              <HabitIcon name={currentItem.icon} size={44} strokeWidth={1.25} className="text-text" />
+            </div>
+            <h2 className="font-heading text-xl text-text leading-tight">{currentItem.name}</h2>
+          </div>
+          <div className="w-full max-w-[280px] px-4 py-4 rounded-card bg-card border border-border space-y-3">
+            <p className="font-mono text-sm text-muted text-center">Do you need to {currentItem.name} today?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConditionalDecided(true)}
+                className="flex-1 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-olive py-3 rounded-card text-sm font-body font-medium transition-colors min-h-[44px]"
+              >
+                Yes
+              </button>
+              <button
+                onClick={handleRest}
+                className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-3 rounded-card text-sm font-body transition-colors min-h-[44px]"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="flex flex-col select-none">
         <div className="text-center px-4 pt-2 pb-3 flex-shrink-0">
           <div className="flex justify-center mb-3">
@@ -937,6 +978,8 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
           </>
         )}
       </div>
+        </>
+      )}
 
       {/* Divider */}
       <div className="h-px bg-border mx-4 flex-shrink-0" />

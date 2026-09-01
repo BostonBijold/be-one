@@ -47,7 +47,7 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const updates = await req.json();
-  const allowed = ["name", "icon", "projectedMinutes", "itemType", "scheduledDays", "successThreshold", "groupId"] as const;
+  const allowed = ["name", "icon", "projectedMinutes", "itemType", "scheduledDays", "successThreshold", "groupId", "isConditional"] as const;
   // "order" isn't client-settable directly — it's only ever derived below,
   // when a groupId move appends the item at the end of its destination.
   const sanitized: Partial<Record<(typeof allowed)[number] | "order", unknown>> = {};
@@ -116,6 +116,7 @@ export async function PATCH(
     itemType: item.itemType,
     scheduledDays: item.scheduledDays,
     successThreshold: item.successThreshold,
+    isConditional: item.isConditional,
     groupId: item.groupId.toString(),
   });
 }

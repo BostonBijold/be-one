@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Pencil } from "lucide-react";
 import HabitIcon from "@/components/HabitIcon";
 
 export interface TimerItem {
@@ -14,7 +15,11 @@ export interface TimerItem {
 interface Props {
   item: TimerItem;
   initialElapsed?: number; // seconds already elapsed (from server startedAt on resume)
-  onComplete: (actualMinutes: number) => void;
+  // elapsedOverrideSeconds is only set once the user has manually edited the
+  // time via the pencil control below — lets the caller re-derive startedAt
+  // from that corrected value instead of trusting the server's own timer,
+  // which has no way to know about a manual correction.
+  onComplete: (actualMinutes: number, elapsedOverrideSeconds?: number) => void;
   onMissed: () => void;
   onClose: () => void;
 }
@@ -39,6 +44,35 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
   // runStartRef = Date.now() when the current running segment began (null if paused).
   const baseElapsedRef = useRef(initialElapsed);
   const runStartRef = useRef<number | null>(null);
+
+  // Manual correction for elapsed time — needed because the server's own
+  // record of startedAt keeps ticking through any local Pause (Pause only
+  // stops this screen's own display, it never tells the server), so a
+  // habit paused mid-timer would otherwise log more time than was actually
+  // spent. Editing here sets the visible/local elapsed directly and, once
+  // used at least once, tells the caller to derive startedAt from this
+  // corrected value on completion instead of trusting the server's clock.
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [editMinutes, setEditMinutes] = useState("0");
+  const [editSeconds, setEditSeconds] = useState("00");
+  const wasEditedRef = useRef(false);
+
+  const openTimeEditor = useCallback(() => {
+    setEditMinutes(String(Math.floor(elapsed / 60)));
+    setEditSeconds(String(elapsed % 60).padStart(2, "0"));
+    setIsEditingTime(true);
+  }, [elapsed]);
+
+  const saveTimeEdit = useCallback(() => {
+    const mins = Math.max(0, Math.floor(Number(editMinutes)) || 0);
+    const secs = Math.min(59, Math.max(0, Math.floor(Number(editSeconds)) || 0));
+    const next = mins * 60 + secs;
+    baseElapsedRef.current = next;
+    runStartRef.current = isRunning ? Date.now() : null;
+    setElapsed(next);
+    wasEditedRef.current = true;
+    setIsEditingTime(false);
+  }, [editMinutes, editSeconds, isRunning]);
 
   const recompute = useCallback(() => {
     if (runStartRef.current != null) {
@@ -81,6 +115,47 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
   }, [recompute]);
 
   const actualMinutes = Math.max(1, Math.round(elapsed / 60));
+  const handleComplete = () => onComplete(actualMinutes, wasEditedRef.current ? elapsed : undefined);
+
+  // Inline mm/ss editor, dropped in place of the "remaining"/"over
+  // target"/"elapsed" caption under the ring in both modes below.
+  const timeEditor = isEditingTime ? (
+    <div className="flex items-center justify-center gap-2 mt-1">
+      <input
+        type="number"
+        inputMode="numeric"
+        value={editMinutes}
+        onChange={(e) => setEditMinutes(e.target.value)}
+        className="w-12 py-1 rounded bg-card border border-border-light text-center font-mono text-sm text-text"
+        aria-label="Minutes"
+      />
+      <span className="font-mono text-dim text-sm">m</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        value={editSeconds}
+        onChange={(e) => setEditSeconds(e.target.value)}
+        className="w-12 py-1 rounded bg-card border border-border-light text-center font-mono text-sm text-text"
+        aria-label="Seconds"
+      />
+      <span className="font-mono text-dim text-sm">s</span>
+      <button onClick={saveTimeEdit} className="ml-1 font-mono text-olive-light text-xs px-2 py-1 min-h-[32px]">
+        Save
+      </button>
+      <button onClick={() => setIsEditingTime(false)} className="font-mono text-dim text-xs px-2 py-1 min-h-[32px]">
+        Cancel
+      </button>
+    </div>
+  ) : (
+    <button
+      onClick={openTimeEditor}
+      className="flex items-center gap-1 mt-1 mx-auto font-mono text-xs text-dim min-h-[32px] px-2"
+      aria-label="Edit elapsed time"
+    >
+      <Pencil size={11} />
+      edit time
+    </button>
+  );
 
   // ── Countdown mode ───────────────────────────────────────────────────────────
   if (!isStopwatch) {
@@ -151,11 +226,13 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
               </div>
             </div>
           </div>
+
+          {timeEditor}
         </div>
 
         <div className="px-4 pb-12 space-y-3 w-full">
           <button
-            onClick={() => onComplete(actualMinutes)}
+            onClick={handleComplete}
             className="w-full py-4 rounded-card bg-olive text-text font-body font-medium text-base"
           >
             Done · log {actualMinutes}m
@@ -236,11 +313,13 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
             </div>
           </div>
         </div>
+
+        {timeEditor}
       </div>
 
       <div className="px-4 pb-12 space-y-3 w-full">
         <button
-          onClick={() => onComplete(actualMinutes)}
+          onClick={handleComplete}
           className="w-full py-4 rounded-card bg-olive text-text font-body font-medium text-base"
         >
           Done · log {actualMinutes}m

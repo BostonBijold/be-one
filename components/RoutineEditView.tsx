@@ -34,6 +34,7 @@ export interface EditItem {
   itemType: "standard" | "stopwatch" | "checkbox";
   scheduledDays: number[];  // 0=Sun..6=Sat — which days this item is expected
   successThreshold: number; // how many of this week's scheduled days = 100%
+  isConditional: boolean;  // "Do you need to do this today?" gate — see models/RoutineItem.ts
   appIntentLastTriggeredAt: string | null; // last time a Siri/Shortcuts App Intent triggered this item, if ever
 }
 
@@ -65,7 +66,8 @@ function SortableRow({
     projectedMinutes: number,
     itemType: "standard" | "stopwatch" | "checkbox",
     scheduledDays: number[],
-    successThreshold: number
+    successThreshold: number,
+    isConditional: boolean
   ) => Promise<void>;
   onRemove: () => Promise<void>;
   otherGroups: { _id: string; name: string }[];
@@ -87,6 +89,7 @@ function SortableRow({
   const [editType, setEditType] = useState<"standard" | "stopwatch" | "checkbox">(item.itemType);
   const [editScheduledDays, setEditScheduledDays] = useState<number[]>(item.scheduledDays);
   const [editThreshold, setEditThreshold] = useState(item.successThreshold);
+  const [editConditional, setEditConditional] = useState(item.isConditional);
   const [saving, setSaving] = useState(false);
   const [moving, setMoving] = useState(false);
 
@@ -101,7 +104,7 @@ function SortableRow({
   const handleSave = async () => {
     setSaving(true);
     const mins = editType === "standard" ? (parseInt(editMins) || item.projectedMinutes) : 0;
-    await onSave(editName.trim() || item.name, editIcon || item.icon, mins, editType, editScheduledDays, editThreshold);
+    await onSave(editName.trim() || item.name, editIcon || item.icon, mins, editType, editScheduledDays, editThreshold, editConditional);
     setSaving(false);
   };
 
@@ -249,6 +252,33 @@ function SortableRow({
               ))}
             </div>
           </div>
+          {/* Conditional — asked fresh each day instead of following a fixed schedule */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setEditConditional((c) => !c)}
+              className="w-full flex items-center justify-between bg-bg border border-border rounded-card px-3 py-2"
+            >
+              <span className="text-left">
+                <span className="font-body text-sm text-text block">Ask each day instead</span>
+                <span className="font-mono text-[9px] text-dim">
+                  &ldquo;Do you need to {editName.trim() || item.name} today?&rdquo; — Yes starts it, No counts as rest
+                </span>
+              </span>
+              <span
+                className={`flex-shrink-0 ml-3 w-10 h-6 rounded-full transition-colors relative ${
+                  editConditional ? "bg-olive" : "bg-border-light"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-text transition-transform ${
+                    editConditional ? "translate-x-[18px]" : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+
           {/* Threshold */}
           <div>
             <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
@@ -391,16 +421,17 @@ export default function RoutineEditView({ group, items: initialItems, groups }: 
     projectedMinutes: number,
     itemType: "standard" | "stopwatch" | "checkbox",
     scheduledDays: number[],
-    successThreshold: number
+    successThreshold: number,
+    isConditional: boolean
   ) => {
     setItems((prev) =>
-      prev.map((it) => (it._id === id ? { ...it, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold } : it))
+      prev.map((it) => (it._id === id ? { ...it, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold, isConditional } : it))
     );
     setEditingId(null);
     await fetch(`/api/routine-items/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, icon, projectedMinutes, itemType, scheduledDays, successThreshold }),
+      body: JSON.stringify({ name, icon, projectedMinutes, itemType, scheduledDays, successThreshold, isConditional }),
     });
     router.refresh(); // invalidate routines page cache
   };
@@ -430,12 +461,13 @@ export default function RoutineEditView({ group, items: initialItems, groups }: 
     projectedMinutes: number,
     itemType: "standard" | "stopwatch" | "checkbox" = "standard",
     scheduledDays: number[] = [0, 1, 2, 3, 4, 5, 6],
-    successThreshold: number = 7
+    successThreshold: number = 7,
+    isConditional: boolean = false
   ) => {
     const res = await fetch("/api/routine-items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupId: group._id, templateId, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold }),
+      body: JSON.stringify({ groupId: group._id, templateId, name, icon, projectedMinutes, itemType, scheduledDays, successThreshold, isConditional }),
     });
     const newItem = await res.json();
     // Push directly into local state — don't wait for a server round-trip
@@ -450,6 +482,7 @@ export default function RoutineEditView({ group, items: initialItems, groups }: 
         order: prev.length,
         scheduledDays: newItem.scheduledDays ?? scheduledDays,
         successThreshold: newItem.successThreshold ?? successThreshold,
+        isConditional: newItem.isConditional ?? isConditional,
         appIntentLastTriggeredAt: null,
       },
     ]);
@@ -544,7 +577,7 @@ export default function RoutineEditView({ group, items: initialItems, groups }: 
                     onToggleEdit={() =>
                       setEditingId((prev) => (prev === item._id ? null : item._id))
                     }
-                    onSave={(name, icon, mins, type, days, threshold) => handleSaveItem(item._id, name, icon, mins, type, days, threshold)}
+                    onSave={(name, icon, mins, type, days, threshold, conditional) => handleSaveItem(item._id, name, icon, mins, type, days, threshold, conditional)}
                     onRemove={() => handleRemove(item._id)}
                     otherGroups={otherGroups}
                     onMove={(groupId) => handleMoveItem(item._id, groupId)}

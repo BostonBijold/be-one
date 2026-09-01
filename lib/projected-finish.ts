@@ -34,6 +34,14 @@ export interface ItemProjection {
   // visualization from this same per-item resolution instead of a second,
   // separately-maintained one.
   actualMinutes?: number;
+  // Only meaningful when state === "pending": a conditional item ("Do you
+  // need to shave today?") hasn't been asked yet, so there's no way to know
+  // whether it'll actually happen — see RoutineItem.isConditional. Until
+  // it's reached and answered (at which point it arrives here as "active",
+  // "rest", or the like, same as any other item), it contributes nothing to
+  // the estimate rather than assuming its full projectedMinutes will be
+  // spent.
+  isConditional?: boolean;
 }
 
 // Total minutes of real work still standing between "now" (nowMs) and the
@@ -55,7 +63,9 @@ export interface ItemProjection {
 // the projection tracks "now" directly, one tick at a time, which is what
 // makes it visibly push later for every second you run over. Every other
 // pending item (not yet reached, no log at all) contributes its full
-// projectedMinutes, untouched.
+// projectedMinutes, untouched — except a conditional one still awaiting its
+// "do you need to do this today?" answer, which contributes nothing until
+// that's decided (see ItemProjection.isConditional).
 export function remainingMinutes(items: ItemProjection[], nowMs: number = Date.now()): number {
   return items.reduce((total, item) => {
     if (item.state === "active") {
@@ -65,7 +75,7 @@ export function remainingMinutes(items: ItemProjection[], nowMs: number = Date.n
       return total; // already at/over its own target
     }
     if (item.state === "pending") {
-      return total + item.projectedMinutes;
+      return total + (item.isConditional ? 0 : item.projectedMinutes);
     }
     return total; // done / missed / rest — already spent or zeroed out
   }, 0);

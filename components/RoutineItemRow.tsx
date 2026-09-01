@@ -16,6 +16,7 @@ export interface RowItem {
   itemType?: "standard" | "stopwatch" | "checkbox" | "virtue_checkin" | "weekly_review" | "routine_review";
   scheduledDays: number[];   // 0=Sun..6=Sat — which days this item is expected
   successThreshold: number;  // how many of this week's scheduled days = 100%
+  isConditional?: boolean;   // "Do you need to do this today?" gate — see models/RoutineItem.ts
 }
 
 interface Props {
@@ -322,67 +323,97 @@ export default function RoutineItemRow({
                 )
               )}
 
-              {/* Checkbox: simple done, no timer */}
-              {isCheckbox && (
-                <button
-                  onClick={() => onStateChange("done", { isBackEntry })}
-                  className="w-full flex items-center justify-center gap-2 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
-                >
-                  <span className="font-body text-sm font-medium">✓ Done</span>
-                </button>
-              )}
-
-              {/* Standard / Stopwatch */}
-              {isTimeable && (
-                isBackEntry ? (
-                  <div className="flex items-center gap-2">
+              {/* Conditional habit ("Do you need to shave today?") — not
+                  scheduled by day, decided fresh each time it's reached.
+                  Replaces the normal Start/Missed/Rest panel entirely: Yes
+                  routes into exactly what Start would have done; No logs it
+                  as a rest day directly, same as tapping Rest would. See
+                  models/RoutineItem.ts's isConditional and
+                  lib/projected-finish.ts's remainingMinutes, which excludes
+                  this item from the time estimate until answered. */}
+              {item.isConditional && !isSpecial ? (
+                <div className="px-4 py-3 rounded-card bg-bg border border-border space-y-2.5">
+                  <p className="font-mono text-xs text-muted">Do you need to {item.name} today?</p>
+                  <div className="flex gap-2">
                     <button
-                      onClick={() =>
-                        onStateChange("done", {
-                          actualMinutes: Math.max(1, parseInt(backMins) || item.projectedMinutes),
-                          isBackEntry: true,
-                        })
-                      }
-                      className="flex-1 flex items-center justify-center gap-2 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
+                      onClick={() => (isCheckbox ? onStateChange("done", { isBackEntry }) : onStartTimer())}
+                      className="flex-1 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-olive py-2.5 rounded-card text-sm font-body font-medium transition-colors min-h-[44px]"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => onStateChange("rest", { isBackEntry })}
+                      className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Checkbox: simple done, no timer */}
+                  {isCheckbox && (
+                    <button
+                      onClick={() => onStateChange("done", { isBackEntry })}
+                      className="w-full flex items-center justify-center gap-2 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
                     >
                       <span className="font-body text-sm font-medium">✓ Done</span>
                     </button>
-                    <div className="flex items-center gap-1 bg-bg border border-border rounded-card px-3 py-2 min-h-[44px]">
-                      <input
-                        type="number"
-                        min={1}
-                        value={backMins}
-                        onChange={(e) => setBackMins(e.target.value)}
-                        className="w-10 bg-transparent font-mono text-sm text-text outline-none text-right"
-                      />
-                      <span className="font-mono text-dim text-xs">m</span>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={onStartTimer}
-                    className="w-full flex items-center justify-between bg-olive/10 hover:bg-olive/20 border border-olive/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
-                  >
-                    <span className="font-body text-sm font-medium">▶ {isStopwatch ? "Start Stopwatch" : "Start Timer"}</span>
-                    {!isStopwatch && <span className="font-mono text-olive-light text-xs">{fmtMins(item.projectedMinutes)}</span>}
-                  </button>
-                )
-              )}
+                  )}
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onStateChange("missed", { isBackEntry })}
-                  className="flex-1 border border-burgundy/40 hover:border-burgundy text-burgundy-light py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
-                >
-                  ✗ Missed
-                </button>
-                <button
-                  onClick={() => onStateChange("rest", { isBackEntry })}
-                  className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
-                >
-                  ~ Rest
-                </button>
-              </div>
+                  {/* Standard / Stopwatch */}
+                  {isTimeable && (
+                    isBackEntry ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            onStateChange("done", {
+                              actualMinutes: Math.max(1, parseInt(backMins) || item.projectedMinutes),
+                              isBackEntry: true,
+                            })
+                          }
+                          className="flex-1 flex items-center justify-center gap-2 bg-olive/10 hover:bg-olive/20 border border-olive/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
+                        >
+                          <span className="font-body text-sm font-medium">✓ Done</span>
+                        </button>
+                        <div className="flex items-center gap-1 bg-bg border border-border rounded-card px-3 py-2 min-h-[44px]">
+                          <input
+                            type="number"
+                            min={1}
+                            value={backMins}
+                            onChange={(e) => setBackMins(e.target.value)}
+                            className="w-10 bg-transparent font-mono text-sm text-text outline-none text-right"
+                          />
+                          <span className="font-mono text-dim text-xs">m</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={onStartTimer}
+                        className="w-full flex items-center justify-between bg-olive/10 hover:bg-olive/20 border border-olive/30 text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
+                      >
+                        <span className="font-body text-sm font-medium">▶ {isStopwatch ? "Start Stopwatch" : "Start Timer"}</span>
+                        {!isStopwatch && <span className="font-mono text-olive-light text-xs">{fmtMins(item.projectedMinutes)}</span>}
+                      </button>
+                    )
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onStateChange("missed", { isBackEntry })}
+                      className="flex-1 border border-burgundy/40 hover:border-burgundy text-burgundy-light py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                    >
+                      ✗ Missed
+                    </button>
+                    <button
+                      onClick={() => onStateChange("rest", { isBackEntry })}
+                      className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                    >
+                      ~ Rest
+                    </button>
+                  </div>
+                </>
+              )}
 
             </>
           ) : (

@@ -59,7 +59,11 @@ export function computeTimeline(
       };
     }
     if (item.state === "pending") {
-      return { id: item.id, minutes: item.projectedMinutes, colorState: "pending" as TimelineColorState };
+      // A conditional item not yet answered contributes nothing to the bar —
+      // same "don't assume it'll happen" treatment as remainingMinutes in
+      // lib/projected-finish.ts.
+      const minutes = item.isConditional ? 0 : item.projectedMinutes;
+      return { id: item.id, minutes, colorState: "pending" as TimelineColorState };
     }
     // missed / rest — zero width, same "contributes nothing" treatment as
     // remainingMinutes in projected-finish.ts.

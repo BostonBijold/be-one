@@ -53,7 +53,7 @@ async function buildRoutineTimeline(
         actualMinutes: log.state === "done" ? (log.actualMinutes ?? undefined) : undefined,
       };
     }
-    return { projectedMinutes: it.projectedMinutes, state: "pending" };
+    return { projectedMinutes: it.projectedMinutes, state: "pending", isConditional: it.isConditional === true };
   });
 
   const nowMs = Date.now();
