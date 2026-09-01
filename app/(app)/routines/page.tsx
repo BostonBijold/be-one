@@ -146,6 +146,7 @@ export default async function RoutinesPage({
     completedAt: l.completedAt ? (l.completedAt as Date).toISOString() : undefined,
     pausedSeconds: l.pausedSeconds ?? 0,
     state: l.state as LogState,
+    sessionGroupId: l.sessionGroupId ? l.sessionGroupId.toString() : undefined,
   }));
 
   // 7-day streak logs

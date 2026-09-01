@@ -18,7 +18,7 @@ import type { RowItem } from "@/components/RoutineItemRow";
 import { isItemVisibleOn } from "@/lib/routine-visibility";
 import { useTodoActions } from "@/lib/useTodoActions";
 import { emitRoutineLogChanged, ROUTINE_LOG_CHANGED_EVENT } from "@/lib/routine-log-events";
-import { startRoutineActivity, endRoutineActivity } from "@/lib/native/routine-activity";
+import { startRoutineActivity, updateRoutineActivity, endRoutineActivity } from "@/lib/native/routine-activity";
 
 const LOG_POLL_MS = 2000;
 
@@ -100,6 +100,43 @@ export default function RoutinesView({
     [groups]
   );
 
+  // Schedules exactly one extra Live Activity update for the instant a
+  // standalone timer crosses its own target, so the widget gets a redraw to
+  // flip its countdown->overtime text and olive->amber color at (or right
+  // after) the crossing — same fix RoutineSession.tsx's per-item effect
+  // already applies for session timers, ported here since this path had no
+  // such scheduled push and was otherwise frozen at 00:00/olive indefinitely
+  // once the target passed (Text(timerInterval:) and timerColor(_:) are both
+  // only re-evaluated on an actual widget redraw). Skipped for stopwatch
+  // items (projectedMinutes 0, already the case by the time this is called)
+  // and for a resume that's already past its own target.
+  const activityCrossingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearActivityCrossingTimeout = useCallback(() => {
+    if (activityCrossingTimeoutRef.current) {
+      clearTimeout(activityCrossingTimeoutRef.current);
+      activityCrossingTimeoutRef.current = null;
+    }
+  }, []);
+  const scheduleActivityCrossing = useCallback((payload: {
+    routineItemId: string;
+    routineLabel: string;
+    habitName: string;
+    startedAt: string;
+    projectedMinutes: number;
+  }) => {
+    clearActivityCrossingTimeout();
+    if (payload.projectedMinutes <= 0) return;
+    const targetInstant = new Date(payload.startedAt).getTime() + payload.projectedMinutes * 60000;
+    const msUntilTarget = targetInstant - Date.now();
+    if (msUntilTarget <= 0) return;
+    activityCrossingTimeoutRef.current = setTimeout(() => {
+      activityCrossingTimeoutRef.current = null;
+      updateRoutineActivity(payload);
+    }, msUntilTarget);
+  }, [clearActivityCrossingTimeout]);
+
+  useEffect(() => clearActivityCrossingTimeout, [clearActivityCrossingTimeout]);
+
   // Split into timed routine groups and standalone habit groups
   const routineGroups = useMemo(() => groups.filter((g) => g.timeOfDay !== "habit"), [groups]);
   const habitGroups = useMemo(() => groups.filter((g) => g.timeOfDay === "habit"), [groups]);
@@ -168,18 +205,20 @@ export default function RoutinesView({
         // Re-syncs the Live Activity on cold start — idempotent (start()
         // always ends any existing activity first), so this is safe even
         // though the Activity likely already survived the app being closed.
-        startRoutineActivity({
+        const activityPayload = {
           routineItemId: item._id,
           routineLabel: g.name,
           habitName: item.name,
           startedAt: new Date(Date.now() - elapsed * 1000).toISOString(),
           projectedMinutes: item.itemType === "stopwatch" ? 0 : item.projectedMinutes,
-        });
+        };
+        startRoutineActivity(activityPayload);
+        scheduleActivityCrossing(activityPayload);
         return true;
       }
     }
     return false;
-  }, [initialLogs, routineGroups, habitGroups, groups]);
+  }, [initialLogs, routineGroups, habitGroups, groups, scheduleActivityCrossing]);
 
   // Auto-resume any in_progress timer from a previous session
   useEffect(() => {
@@ -445,13 +484,15 @@ export default function RoutinesView({
           const elapsed = (existingLog.pausedSeconds ?? 0) + Math.max(0, Math.floor((Date.now() - new Date(existingLog.startedAt).getTime()) / 1000));
           setTimerInitialElapsed(elapsed);
           setTimerItem(item);
-          startRoutineActivity({
+          const activityPayload = {
             routineItemId: item._id,
             routineLabel: findGroupName(item._id),
             habitName: item.name,
             startedAt: new Date(Date.now() - elapsed * 1000).toISOString(),
             projectedMinutes: item.itemType === "stopwatch" ? 0 : item.projectedMinutes,
-          });
+          };
+          startRoutineActivity(activityPayload);
+          scheduleActivityCrossing(activityPayload);
           return;
         }
         // Paused with no resolvable session (e.g. the group was deleted) — fall
@@ -490,15 +531,17 @@ export default function RoutinesView({
       emitRoutineLogChanged();
       setTimerInitialElapsed(0);
       setTimerItem(item);
-      startRoutineActivity({
+      const activityPayload = {
         routineItemId: item._id,
         routineLabel: findGroupName(item._id),
         habitName: item.name,
         startedAt: optimistic.startedAt!,
         projectedMinutes: item.itemType === "stopwatch" ? 0 : item.projectedMinutes,
-      });
+      };
+      startRoutineActivity(activityPayload);
+      scheduleActivityCrossing(activityPayload);
     },
-    [logs, selectedDate, groups, findGroupName]
+    [logs, selectedDate, groups, findGroupName, scheduleActivityCrossing]
   );
 
   // PATCH the in_progress log to done. Server derives actualMinutes from startedAt
@@ -542,9 +585,10 @@ export default function RoutinesView({
       }
       emitRoutineLogChanged();
       setTimerItem(null);
+      clearActivityCrossingTimeout();
       endRoutineActivity();
     },
-    [timerItem, selectedDate]
+    [timerItem, selectedDate, clearActivityCrossingTimeout]
   );
 
   const handleTimerMissed = useCallback(async () => {
@@ -560,8 +604,9 @@ export default function RoutinesView({
     });
     emitRoutineLogChanged();
     setTimerItem(null);
+    clearActivityCrossingTimeout();
     endRoutineActivity();
-  }, [timerItem, selectedDate]);
+  }, [timerItem, selectedDate, clearActivityCrossingTimeout]);
 
   const handleSessionFinish = useCallback(async () => {
     setActiveSession(null);

@@ -146,7 +146,13 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
 
   // Reaching a new item always starts clean — a stale "check-in open" flag
   // left over from the previous item would otherwise pop the wrong modal.
-  useEffect(() => { setSpecialModalOpen(false); setConditionalDecided(false); }, [currentIndex]);
+  // conditionalDecided is NOT reset here — see the per-item effect below,
+  // which derives it from the item's own banked pausedSeconds instead, so
+  // jumping away from a conditional item (already answered "Yes", timer
+  // running) and back doesn't re-ask the question and hide the ring behind
+  // it, which reads to the user as the timer having restarted even though
+  // its elapsed time was never actually lost.
+  useEffect(() => { setSpecialModalOpen(false); }, [currentIndex]);
 
   const target = isCountdown ? (currentItem?.projectedMinutes ?? 0) * 60 : 0;
   const isOver = isCountdown && target > 0 && elapsed >= target;
@@ -310,6 +316,10 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
     runStartRef.current = null;
     setElapsed(0);
     setIsRunning(false);
+    // Same "blank while switch is in flight" treatment for the conditional
+    // gate — resolved for real below once the fresh log data (specifically
+    // pausedSeconds) is in hand.
+    setConditionalDecided(false);
 
     // Any crossing-timeout scheduled for the previous item no longer
     // applies — it'll be re-scheduled below for this one if it's a
@@ -347,6 +357,12 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
         !isCheckboxItem && !isSpecialItemType(item.itemType) && own?.startedAt
           ? (own.pausedSeconds ?? 0) + Math.max(0, Math.floor((Date.now() - new Date(own.startedAt).getTime()) / 1000))
           : 0;
+      // A conditional item ("Do you need to shave today?") only needs
+      // answering once — banked pausedSeconds > 0 means a real running
+      // segment already happened (you already answered "Yes" and it was
+      // timing), so jumping back in shouldn't re-ask and hide the ring
+      // behind the gate again.
+      if (item.isConditional) setConditionalDecided((own?.pausedSeconds ?? 0) > 0);
       baseElapsedRef.current = seeded;
       runStartRef.current = Date.now();
       setElapsed(seeded);
