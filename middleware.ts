@@ -6,12 +6,21 @@ const { auth } = NextAuth(authConfig);
 
 const PUBLIC_PAGE_PATHS = new Set(["/login", "/signup"]);
 
+// Pages that must stay reachable regardless of auth state — no redirect
+// either way. Unlike PUBLIC_PAGE_PATHS (login/signup), a signed-in user
+// isn't bounced off these into /routines, since e.g. the privacy policy
+// needs to work identically for a logged-out App Store reviewer and a
+// logged-in user checking it from within the app.
+const ALWAYS_ACCESSIBLE_PATHS = new Set(["/privacy"]);
+
 export default auth((req) => {
   // Local dev escape hatch — lets you work without Google OAuth creds configured.
   // Never set SKIP_AUTH in the Vercel production environment.
   if (process.env.SKIP_AUTH === "true") return;
 
   const { pathname } = req.nextUrl;
+  if (ALWAYS_ACCESSIBLE_PATHS.has(pathname)) return;
+
   const isLoggedIn = !!req.auth;
   const isApiRoute = pathname.startsWith("/api");
   const isPublicPage = PUBLIC_PAGE_PATHS.has(pathname);

@@ -55,7 +55,10 @@ export default async function LoginPage({
         </p>
 
         <p className="text-muted text-xs text-center mt-4">
-          Your data is private to your account.
+          Your data is private to your account.{" "}
+          <Link href="/privacy" className="text-gold hover:underline">
+            Privacy Policy
+          </Link>
         </p>
       </div>
     </main>
