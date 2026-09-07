@@ -19,11 +19,13 @@ interface Props {
                                  // green/amber "done" timing color
 }
 
-// Only done/missed/rest are meaningful to the weekly-progress math — a
-// same-day in_progress/paused log reads the same as "no log yet" (today
-// stays "pending" until it's explicitly resolved).
+// Only done/missed/rest/not_applicable are meaningful to the weekly-progress
+// math — a same-day in_progress/paused log reads the same as "no log yet"
+// (today stays "pending" until it's explicitly resolved). not_applicable is
+// passed through so computeWeeklyProgress can map it to "not_scheduled" —
+// see lib/routine-progress.ts.
 function toLoggedState(l: { state: LogState; actualMinutes: number | null }) {
-  return l.state === "done" || l.state === "missed" || l.state === "rest"
+  return l.state === "done" || l.state === "missed" || l.state === "rest" || l.state === "not_applicable"
     ? { state: l.state, actualMinutes: l.actualMinutes }
     : undefined;
 }

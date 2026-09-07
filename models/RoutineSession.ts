@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, model, models } from "mongoose";
 
 export type RoutineSessionStatus = "in_progress" | "completed";
-export type CompletionState = "done" | "missed" | "rest";
+export type CompletionState = "done" | "missed" | "rest" | "not_applicable";
 
 export interface ICompletionEntry {
   routineItemId: mongoose.Types.ObjectId;
@@ -31,7 +31,7 @@ const CompletionEntrySchema = new Schema<ICompletionEntry>(
   {
     routineItemId: { type: Schema.Types.ObjectId, ref: "RoutineItem", required: true },
     completedAt: { type: Date, required: true },
-    state: { type: String, enum: ["done", "missed", "rest"], required: true },
+    state: { type: String, enum: ["done", "missed", "rest", "not_applicable"], required: true },
   },
   { _id: false }
 );

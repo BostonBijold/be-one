@@ -17,13 +17,14 @@ The Today/Routines page groups a user's daily habits into time-of-day `RoutineGr
 
 ## Log states
 
-A `RoutineLog` (see [routines-api.md](../api/routines-api.md)) has `state: "in_progress" | "paused" | "done" | "missed" | "rest"`, or simply has no log yet ("pending"). Neither `in_progress` nor `paused` counts as complete for a group's completion check.
+A `RoutineLog` (see [routines-api.md](../api/routines-api.md)) has `state: "in_progress" | "paused" | "done" | "missed" | "rest" | "not_applicable"`, or simply has no log yet ("pending"). Neither `in_progress` nor `paused` counts as complete for a group's completion check.
 
-- **pending** → tap opens the row and shows: Start Timer/Start Stopwatch (standard/stopwatch), a plain Done button (checkbox), or Missed/Rest buttons. If the group's scheduled window has passed ("back-entry" mode, see below), the timer button is replaced by a Done button plus a manual minutes input.
+- **pending** → tap opens the row and shows: Start Timer/Start Stopwatch (standard/stopwatch), a plain Done button (checkbox), or Missed/Rest buttons — or, for a conditional item (`isConditional`, see [timer.md](timer.md#conditional-habits--do-you-need-to-do-this-today)), a "Do you need to {name} today?" Yes/No prompt instead. If the group's scheduled window has passed ("back-entry" mode, see below), the timer button is replaced by a Done button plus a manual minutes input.
 - **in_progress** → shows "▶ Resume Timer" (reopens the timer, seeded with elapsed time from the server's `startedAt`) plus Missed/Undo. The API enforces that **at most one log can be `in_progress` at a time per user** — starting a timer elsewhere auto-*completes* whatever was left running instead of leaving two things active at once (see [timer.md](timer.md)).
 - **paused** → same row treatment as `in_progress` ("▶ Resume Timer", reopening wherever it was left) — this state only ever arises from jumping to a different item inside an open Routine Session, never from anything on this row itself. Tapping "Resume Timer" on a paused item reopens the session at that item rather than a standalone timer, since a paused log always carries its session anchor. See [timer.md](timer.md) for the full pause/resume mechanics.
 - **done** → shows an "Edit time" button (standard/stopwatch items) that opens a manual start/end time editor, plus Missed/Rest/Undo.
 - **missed** / **rest** → shows a retry action (Start Timer, or Done+minutes if in back-entry mode) plus the other skip state and Undo.
+- **not_applicable** → only reachable by answering "No" to a conditional item's gate, never from a normal skip button. Shows an "N/A" badge, distinct from Rest's — see [timer.md](timer.md#conditional-habits--do-you-need-to-do-this-today) for why it's a different state (excluded from weekly-progress/streak math like a not-scheduled day, rather than counted as a success) and Undo.
 - **Undo** (any logged state) calls `onStateChange(null)`, which `DELETE`s the log entirely — the item returns to pending.
 - **Manual time entry** ("Edit time" / "Log with specific times") lets the user type a start and end clock time directly; it computes minutes client-side and calls `onStateChange("done", { startedAt, completedAt })`, which bypasses the timer UI entirely and PATCHes explicit timestamps (see routines-api.md).
 
@@ -58,7 +59,7 @@ The shared math lives in `lib/routine-progress.ts`'s `computeWeeklyProgress` (im
 - **`missed`** — an explicit Missed tap (hollow, solid red/burgundy-light border, ✕ mark where there's room) — deliberately distinct from `unlogged` below even though both are equally "not a success" for the math
 - **`unlogged`** — a strictly-past scheduled day with no log at all (hollow, solid grey/dim border, no mark) — a read-time interpretation only, nothing is ever written to the database to represent it
 - **`pending`** — a scheduled day that's today (and not yet resolved) or later this week (hollow, **dashed** grey/dim border — the dash is what separates it from `unlogged`'s solid border)
-- **`not_scheduled`** — a day outside `scheduledDays` entirely (very faint solid fill, no border) — excluded from every count above; a log that happens to exist on a non-scheduled day (e.g. logged anyway) is invisible to this math, not a bonus
+- **`not_scheduled`** — a day outside `scheduledDays` entirely (very faint solid fill, no border) — excluded from every count above; a log that happens to exist on a non-scheduled day (e.g. logged anyway) is invisible to this math, not a bonus. A conditional item's `RoutineLog.state: "not_applicable"` (see [timer.md](timer.md#conditional-habits--do-you-need-to-do-this-today)) is deliberately mapped to this exact same `DayBreakdown` state, not a separate one — a "not needed today" answer reads and renders identically to a day the item was never scheduled for at all.
 
 ### Off-schedule groups
 

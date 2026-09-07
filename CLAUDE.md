@@ -65,6 +65,7 @@ border-light:   #3d3b2e
 ---
 
 ## Data Models
+> **These are the original pre-build schemas — several have drifted significantly from the real Mongoose models.** Notably: `User` has no `role` field (see "Admin Role" below) and gained `passwordHash`/`apiKey`/`selectedPhilosophyId`/Live-Activity-token fields; `Virtue` is now scoped to a `Philosophy` (see "Virtue List" below) and `RoutineGroup`/`RoutineItem`/`RoutineLog` all gained substantially more fields (item types, weekly schedule, session/pause state); `HabitGoalLink` was never built at all. For the real shape, read the files directly in `models/` or see `docs/features/*.md`. Kept below for original design intent, not as ground truth.
 
 ### User
 ```js
@@ -221,44 +222,48 @@ border-light:   #3d3b2e
 
 ## Feature Build Order
 
-### Phase 1 — Routines (current focus)
-- [ ] MongoDB connection + Mongoose models
-- [ ] Auth (email/password or Google OAuth)
-- [ ] Seed default routine groups + items on first login
-- [ ] Today view: morning group (collapses after 10am) + evening group (collapses after 10pm)
-- [ ] Routine card: tap to expand actions (Start timer / Missed it / Rest+Life)
-- [ ] Timer screen: ring countdown, green→amber→red color shift, actual time logged on stop
-- [ ] RoutineLog write on complete/skip
-- [ ] 7-day streak dots per item
-- [ ] Back-entry: manual log when morning window has passed
+> **This checklist is the original pre-build plan and is kept only for history — it undersells and in places misdescribes what actually shipped.** For accurate, actively-maintained detail, use [`docs/project-structure.md`](docs/project-structure.md) and the docs it links (`docs/features/*.md`, `docs/api/*.md`), not this section. See "Current App State" below for a real summary.
 
-### Phase 2 — Goals + Tasks
-- [ ] Goal model + CRUD (name, description, targetDate, outcomeMetric)
-- [ ] Milestones inside goal (ordered, with targetDate)
-- [ ] Tasks inside milestones (scheduledDate optional → appears in Today view if set)
-- [ ] Progress calculation — lowest unit wins:
-      - Has tasks → (total tasks done / total tasks) × 100
-      - Has milestones only → (milestones complete / total milestones) × 100
-      - Neither → manual progressPct
-      - Milestone.complete is DERIVED (all its tasks done), never manually set
-- [ ] HabitGoalLink model — correlation type only for now
-      - Linking a habit to a goal is optional
-      - Completing a habit does NOT auto-advance goal progress (correlation, not causation)
-- [ ] Habit adherence % on goal detail (last 30 days per linked habit)
-- [ ] Outcome log: periodic manual check-ins (e.g. weigh-in) with date + value
-- [ ] Tasks appear in Today view between morning and evening routines
-- [ ] Active goal progress card on Today view (most recently active goal)
-- [ ] Goal detail page: progress bar, milestones+tasks, linked habit adherence, outcome log
+### Phase 1 — Routines — BUILT, well beyond this list
+- [x] MongoDB connection + Mongoose models
+- [x] Auth (email/password or Google OAuth) — see `docs/project-structure.md`'s Authentication section
+- [x] Seed default routine groups + items on first login
+- [x] Today view — evolved into Morning/Afternoon(custom)/Evening groups plus a standalone, never-collapsing **Habits** group (`timeOfDay: "habit"`, not in the original plan) — see `docs/features/routines.md`, `docs/features/habits.md`
+- [x] Routine card: tap to expand actions (Start timer / Missed it / Rest+Life) — plus `checkbox`/`stopwatch` item types, per-item weekly schedule (`scheduledDays`) + `successThreshold`, and conditional ("do you need to do this today?") items not in the original plan
+- [x] Timer screen: ring countdown, green→amber→red color shift, actual time logged on stop — plus drag-to-set-time, pause/resume across a sequential "Start Routine" session, and a Live Activity (Lock Screen/Dynamic Island) mirror — see `docs/features/timer.md`, `docs/features/live-activity.md`
+- [x] RoutineLog write on complete/skip — plus `in_progress`/`paused` states and a persisted `RoutineSession` record
+- [x] 7-day streak dots per item — schedule/threshold-aware, not a flat 7-day window
+- [x] Back-entry: manual log when the scheduled window has passed
 
-### Phase 3 — Virtues
-- [ ] Admin seeds 13 virtues (see list below)
-- [ ] Weekly rotation logic (week number % 13 → current virtue)
-- [ ] Virtue detail page: name, etymology, essay
-- [ ] Virtue shown on Today view header
+### Phase 2 — Goals + Tasks — BUILT, with real gaps from the original plan
+- [x] Goal model + CRUD (name, description, targetDate, outcomeMetric)
+- [x] Milestones inside goal (ordered, with targetDate)
+- [x] Tasks inside milestones (scheduledDate optional)
+- [x] Progress calculation — lowest unit wins (implemented exactly as specced, see `docs/features/goals.md`)
+      - Milestone.complete is DERIVED, but write-time-derived and persisted, not recomputed on read — has a known staleness edge case, see `docs/features/goals.md`
+- [ ] **`HabitGoalLink` model was never built** — doesn't exist anywhere in code. `RoutineItem.linkedGoalId` exists in the schema but no API route ever sets it. There is currently no way to link a habit to a goal at all.
+- [ ] Habit adherence % on goal detail — not built (blocked on the above)
+- [ ] Outcome log — **schema-only**: `outcomeLog` exists on `Goal` but no API route ever writes to it; the goal-detail UI only reads (always empty) — see `docs/features/goals.md`
+- [ ] **Tasks do NOT appear in the Today view** — contrary to the original plan, nothing queries `Goal.milestones[].tasks[]` from the Routines page. What *does* appear in Today view is the separate, later-added standalone `Todo` model (`docs/features/todos.md`) — goal tasks and todos are two unrelated collections sharing only a creation UI (`FABTaskSheet`).
+- [ ] Active goal progress card on Today view — not built
+- [x] Goal detail page: progress bar, milestones+tasks, outcome-metric card (read-only display, see above)
 
-### Phase 4 — Quotes (last)
-- [ ] Admin UI to add quotes, tag to virtue
-- [ ] Random quote from current virtue's pool on each app load
+### Phase 3 — Virtues — BUILT, but redesigned around a "Philosophy" marketplace
+- [x] Weekly rotation logic — generalized from a hardcoded `% 13` to `% virtueCount`, since virtue sets are no longer a single fixed list — see below
+- [x] Virtue detail page: name, etymology, essay (two separate UIs — a full page and a bottom sheet — see `docs/features/virtues.md`)
+- [x] Virtue shown on Today view (banner + bottom-sheet detail)
+- **Redesigned, not just built**: virtues are no longer one hardcoded 13-item list. Admins create named **Philosophy** virtue sets (e.g. "A Good Man," "Franklin's 13 Virtues") and each user picks one via a marketplace; rotation, check-in, and weekly review all read whichever philosophy is currently selected. Also added: progressive virtue stacking (a new user's check-in list grows week over week rather than showing all virtues immediately), an admin virtue/philosophy management UI, and a "Duplicate philosophy" action. See `docs/features/virtues.md` for the full model — it also documents where this diverges from the "Virtue Check-in System"/"Admin Role" sections further down in this file (see the caveats added there).
+
+### Phase 4 — Quotes — BUILT (this file previously said "NOT BUILT," which was wrong)
+- [x] Admin UI to add quotes, tag to virtue
+- [x] Random quote from current virtue's pool (loading screen, date-pinned) + a separate fully-random pick (nav button) — see `docs/api/quotes-api.md`
+
+### Built, but not part of any phase above — the original plan didn't anticipate these
+- **Todos** — a standalone quick-capture list (`models/Todo.ts`), unrelated to Goals despite a shared creation UI — see `docs/features/todos.md`.
+- **Analytics dashboard** — 7-day fixed-week / 30-day rolling views, schedule-aware per-habit pacing — see `docs/features/analytics.md`.
+- **Routine Review** — a separate weekly flow (distinct from the virtue weekly review) for reviewing a routine group's goal times, start time, and item order against real rolling averages — see `docs/features/routine-review.md`.
+- **Live Activity** (Lock Screen/Dynamic Island timer) and **App Intents** (Shortcuts/Siri/Spotlight "Trigger Habit") — native iOS features, the first custom native code in this project — see `docs/features/live-activity.md`, `docs/features/app-intents.md`.
+- **Email/password auth, password change, and a Privacy Policy page** — added for App Store review parity — see `docs/project-structure.md`'s Authentication section.
 
 ---
 
@@ -330,6 +335,7 @@ For goals with a measurable outcome (weight, revenue, etc.):
 - This is separate from progress % — it's the real-world result
 
 ### Today View — Task Appearance
+> **Not built this way.** Goal tasks never appear on the Today view — nothing queries `Goal.milestones[].tasks[]` from the Routines page. The standalone `Todo` model (`docs/features/todos.md`, added later, not in this file's original plan) fills the "today + overdue" role instead, but it has no relationship to Goals at all. See the Phase 2 checklist above.
 - Tasks with `scheduledDate === today` appear between morning and evening routines
 - Tasks without scheduledDate live in goal backlog only (not in Today view)
 - Tasks show: goal name tag (blue), task name, time if scheduled, checkbox
@@ -366,6 +372,8 @@ For goals with a measurable outcome (weight, revenue, etc.):
 ---
 
 ## Virtue List (13 — weekly rotation)
+> **This is now one of two seeded Philosophies ("A Good Man," slug `agm`), not the app's only virtue set.** A second, "Franklin's 13 Virtues" (slug `franklin-13`), was seeded alongside it, and admins can create more. See `docs/features/virtues.md`.
+
 Seed these in order. Essays and etymology to be added by Boston over time.
 
 1. Disciplined — *dis·ci·pli·na*, instruction/training. Not punishment — studenthood of self.
@@ -385,48 +393,56 @@ Seed these in order. Essays and etymology to be added by Boston over time.
 ---
 
 ## Admin Role
-- Boston's account gets `role: 'admin'`
-- Admin can: add/edit quotes, edit virtue essays/etymology
-- Admin cannot be set via UI — set directly in MongoDB or via seed script
-- Regular users cannot modify virtues or quotes
+> **Not implemented as described below** — `models/User.ts` has no `role` field. Admin status is a hardcoded email check, `lib/admin.ts`'s `isAdmin(email)` (plus a `SKIP_AUTH` dev fallback), imported by every admin-gated route/page. See `docs/features/virtues.md`.
+- Admin can: add/edit quotes, edit virtue essays/etymology, and manage the Philosophy/Virtue marketplace (add philosophies, add/reorder/edit/deactivate virtues, duplicate a philosophy)
+- Admin cannot be set via UI — the email is hardcoded in `lib/admin.ts`
+- Regular users cannot modify virtues, philosophies, or quotes
 
 ---
 
-## Current App State (as of Jun 16 2025)
-- Routines: BUILT — morning/afternoon/evening groups, time-aware collapse/expand, dot progress, Edit button per group
-- Analytics tab: BUILT — basic habit adherence data
-- FAB button (center bottom nav): BUILT — opens quick actions (start next routine, add standalone habit, add task)
-- Goals tab: IN PROGRESS
-- Review tab: NOT BUILT
-- Quotes: BUILT — `Quote` model, admin authoring UI, loading-screen virtue-pinned pick + nav-button random pick (see `docs/api/quotes-api.md`)
+## Current App State (as of Sep 2 2026)
+Every top-level tab is built. This section replaces the old "as of Jun 16 2025" snapshot, which predated most of the app (it still described Goals as "IN PROGRESS" and Review as "NOT BUILT," and Quotes as unbuilt, all wrong for a long time). For real detail, use `docs/project-structure.md` and the feature/API docs it links — this is a summary, not the source of truth.
 
-**Bottom nav (final structure):**
+- **Routines**: BUILT — time-of-day groups (Morning/Afternoon/Evening + user-created custom groups) plus a standalone, never-collapsing **Habits** group; time-aware collapse, weekly schedule (`scheduledDays`) + success-threshold streak math, back-entry, a sequential "Start Routine" session with live projected-finish/timeline, drag-to-set-time, and a Lock Screen/Dynamic Island Live Activity mirror. See `docs/features/routines.md`, `habits.md`, `timer.md`, `live-activity.md`.
+- **Analytics**: BUILT — 7-day fixed-calendar-week / 30-day rolling toggle, schedule-aware per-habit pacing breakdown. See `docs/features/analytics.md`.
+- **Goals**: BUILT, with real gaps from the original plan — milestones/tasks and lowest-unit-wins progress work as designed; habit-goal linking (`HabitGoalLink`) was never built, outcome logging is schema-only (no write path), and goal tasks do **not** appear on the Today view. See `docs/features/goals.md`.
+- **Todos**: BUILT — a standalone quick-capture list, not part of the original plan; unrelated to Goals despite sharing a creation UI. See `docs/features/todos.md`.
+- **Virtues** (was "Review" in the original plan — see below): BUILT, redesigned around an admin-managed **Philosophy** marketplace (multiple named virtue sets, not one hardcoded 13-item list) with progressive virtue stacking for new users. Daily yes/no check-in + Sunday weekly review both work, but the "honesty rules" this file describes further down (no editing past answers, locked after Sunday) are **not enforced server-side** — only a client-side convenience. See `docs/features/virtues.md`.
+- **Routine Review**: BUILT — a separate weekly flow (not in the original plan) for reviewing a routine group's goal times/start time/order against real rolling averages. See `docs/features/routine-review.md`.
+- **Quotes**: BUILT — `Quote` model, admin authoring UI, loading-screen virtue-pinned pick + nav-button random pick. See `docs/api/quotes-api.md`.
+- **Auth**: BUILT — Google OAuth and email/password (added for App Store review parity), plus in-app password change, self-service in-app account deletion (`DELETE /api/user/delete-account`, purges every user-scoped collection), and a Privacy Policy page. See `docs/project-structure.md`'s Authentication section.
+- **App Intents / Live Activity**: BUILT — native iOS-only features (Shortcuts/Siri/Spotlight "Trigger Habit," and a Lock Screen/Dynamic Island timer), the first custom native code in this project. See `docs/features/app-intents.md`, `live-activity.md`.
+- **FAB** (center bottom nav): BUILT — dial opening quick actions (resume the active timer, add a standalone habit, add a task/todo).
+- **Store**: a "Coming Soon" stub page exists at `/store` but nothing in the app currently links to it.
+
+**Bottom nav (actual, differs from the original plan below):**
 1. Routines (far left) — Today view
-2. Goals — Goal list + active goal
-3. Analytics — Habit trends, variance, adherence
-4. Review (far right) — Daily virtue check-in + weekly recap
+2. Analytics — habit trends, variance, adherence
+3. *(FAB, center)* — quick actions dial
+4. Goals — goal list + Upcoming To-Dos backlog
+5. Virtues (far right) — daily check-in, weekly review, philosophy marketplace — not "Review"; `/review` still exists as a redirect shim to `/virtues` for old links
 
-**Top nav:**
-- Left: Jackalope logo mark (links to about/merch eventually)
-- Center: "A Good Man" + date
-- Right: Profile avatar (Google icon or initial — opens profile/settings)
-- Store/merch: hidden for MVP, accessible via jackalope logo or profile later
+**Top nav** (`components/Header.tsx`):
+- Left: static logo mark — **not currently a link** to anything
+- Center: **"Be One"** + date — the in-app title has diverged from this file's "A Good Man" branding; `app/layout.tsx`'s `<title>` metadata still says "A Good Man" while the rendered header and the iOS bundle id (`com.bostonbijold.beone`) both say "Be One." Worth a deliberate decision, not silently picking one.
+- Right: profile avatar (initial letter — not a Google icon — opens `/profile`)
 
 ---
 
 ## UI Reference
 
 ### Today View Structure (top to bottom)
-1. Top nav: Jackalope left, "A Good Man / [date]" center, profile avatar right
-2. Virtue card: "THIS WEEK'S VIRTUE — A Good Man Is [Virtue]" with chevron → virtue detail
-3. Today/Analytics tab toggle (already built — reconsider moving Analytics to bottom nav)
-4. Date navigator: < Today >
-5. X/14 progress counter + progress bar
-6. Morning Routine group (collapsible, time-aware)
-7. Goal tasks for today (if any, between routines)
-8. Afternoon Routine group (collapsible, time-aware)
-9. Evening Routine group (collapsible, time-aware)
-10. Bottom nav: Routines / Goals / Analytics / Review
+> **Superseded — see "Current App State" above for what actually shipped.** Analytics and Virtues moved to their own bottom-nav tabs rather than living inline on this page; goal tasks never got a Today-view presence (standalone `Todo`s did instead); the virtue card is a "This Week's Virtue" banner + Manage button, not literally this wording. Kept below for the original intent, not as a live spec.
+1. Top nav: logo left, "Be One / [date]" center, profile avatar right
+2. Virtue card: "This Week's Virtue" banner with chevron → virtue detail
+3. Date navigator: < Today >
+4. X/14 progress counter + progress bar
+5. Morning Routine group (collapsible, time-aware)
+6. Standalone Todos due today (+ overdue carry-forward) — not goal tasks, see `docs/features/todos.md`
+7. Afternoon Routine group (collapsible, time-aware)
+8. Evening Routine group (collapsible, time-aware)
+9. Habits group (never collapses)
+10. Bottom nav: Routines / Analytics / [FAB] / Goals / Virtues
 
 ### Routine Group — Time-Aware Collapse Logic
 Each RoutineGroup has: expectedStartTime, expectedEndTime, bufferMinutes
@@ -456,6 +472,8 @@ User can customize these times per group in settings.
 ---
 
 ## Virtue Check-in System
+
+> **Built largely as specced below, with two real gaps — see `docs/features/virtues.md` for the authoritative version.** (1) The whole system now sits under an admin-managed **Philosophy** marketplace rather than one hardcoded 13-virtue list — see the "Virtue List" caveat above. (2) The "Check-in Honesty Rules" section further down claims "no editing past answers" and "locked after Sunday midnight" — **neither is enforced server-side**; the write route is an unconditional upsert, and only the loose today-ish date-band check and a client-side disabled button exist in code.
 
 ### Overview
 Two special RoutineItem types that live inside routine groups like any other habit.
@@ -539,12 +557,13 @@ Triggered by tapping Start on a `weekly_review` routine item on Sunday evening.
 ---
 
 ## Environment Variables Needed
+Names only, per `docs/project-structure.md`'s Secrets Policy — never write actual values into this file or any doc it links. The names below were wrong until this update (Auth.js v5 uses `AUTH_*`, not `NEXTAUTH_*`/`GOOGLE_CLIENT_*`); this now matches actual `.env.local`:
 ```
 MONGODB_URI=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
-GOOGLE_CLIENT_ID=      # if using Google OAuth
-GOOGLE_CLIENT_SECRET=  # if using Google OAuth
+AUTH_SECRET=
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=
+SKIP_AUTH=             # local-dev-only auth bypass — never set in production
 APNS_KEY_ID=           # Apple Push Notifications Auth Key — see docs/features/live-activity.md
 APNS_TEAM_ID=          # X3DPK5Y29G
 APNS_PRIVATE_KEY=      # contents of the downloaded .p8 file
@@ -553,11 +572,12 @@ APNS_PRIVATE_KEY=      # contents of the downloaded .p8 file
 ---
 
 ## Notes for Claude Code
-- Always write to `/src` directory structure
+> The two directory-structure bullets below were wrong for the life of this project so far — there is no `/src` anywhere in this repo. Fixed to match reality; see `docs/project-structure.md` for the full folder map.
+- Write to the actual repo layout: `app/` (pages + API routes under `app/api/`), `components/`, `lib/`, `models/` — all at the repo root, no `/src` wrapper
 - Use server components where possible, client components only where interactivity needed
-- API routes under `/src/app/api/`
-- Keep Mongoose models in `/src/lib/models/`
-- DB connection utility in `/src/lib/mongodb.ts`
+- Keep Mongoose models in `models/` (not `lib/models/`)
+- DB connection utilities are `lib/mongoose.ts` (Mongoose) and `lib/mongodb-client.ts` (raw driver, for the NextAuth adapter)
 - Do not use localStorage or sessionStorage — all state lives in MongoDB
 - The app should feel native on mobile Safari — test tap targets at 44px minimum
 - Seed script should be idempotent (safe to run multiple times)
+- Keep `docs/project-structure.md` and `docs/features/*.md`/`docs/api/*.md` in sync with any code change in their area — they say so themselves at the top of each file, and this section of `CLAUDE.md` drifting for over a year is exactly the failure mode that instruction exists to prevent

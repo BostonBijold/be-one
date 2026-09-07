@@ -169,14 +169,55 @@ export default function HabitItemCard({
     );
   }
 
+  // ── Not Applicable state ───────────────────────────────────────────────────
+  // A conditional item ("Do you need to shave today?") answered No — not the
+  // same as Rest (which protects a streak for something skipped that WAS
+  // expected). See models/RoutineLog.ts's LogState and RoutineItemRow.tsx's
+  // matching block for the routine-group version of this card.
+  if (state === "not_applicable") {
+    return (
+      <div className="bg-card rounded-card border-l-[3px] border-l-dim px-4 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="w-7 flex items-center justify-center flex-shrink-0">
+            <HabitIcon name={item.icon} size={17} className="text-dim" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-body text-sm text-dim leading-tight">{item.name}</p>
+            <div className="mt-1.5">
+              <StreakDots
+              logs={weekLogs}
+              dates={weekDates}
+              today={today}
+              viewingDate={selectedDate}
+              scheduledDays={item.scheduledDays}
+              successThreshold={item.successThreshold}
+              targetMinutes={isTimed ? item.projectedMinutes : null}
+            />
+            </div>
+          </div>
+          <span className="font-mono text-xs text-dim bg-dim/10 px-2 py-0.5 rounded-pill flex-shrink-0">
+            N/A
+          </span>
+        </div>
+        <button
+          onClick={() => onStateChange(null)}
+          className="mt-2 ml-10 font-mono text-[9px] text-dim uppercase tracking-widest"
+        >
+          Undo
+        </button>
+      </div>
+    );
+  }
+
   // ── Pending state ──────────────────────────────────────────────────────────
 
   // Conditional habit ("Do you need to shave today?") — not scheduled by
   // day, decided fresh each time it's shown. Replaces the primary action +
   // skip options entirely: Yes routes into exactly what Start/Done would
-  // have; No logs it as a rest day directly. See models/RoutineItem.ts's
-  // isConditional and RoutineItemRow.tsx's matching gate for the routine-group
-  // version of this same card.
+  // have; No logs it as not_applicable, distinct from Rest — see the
+  // not_applicable render branch above and models/RoutineItem.ts's
+  // isConditional. RoutineItemRow.tsx has the matching gate for the
+  // routine-group version of this same card.
   if (item.isConditional) {
     return (
       <div className="bg-card rounded-card px-4 py-3.5 space-y-3">
@@ -209,8 +250,8 @@ export default function HabitItemCard({
               Yes
             </button>
             <button
-              onClick={() => onStateChange("rest", { isBackEntry })}
-              className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-2 rounded-card text-xs font-body transition-colors min-h-[36px]"
+              onClick={() => onStateChange("not_applicable", { isBackEntry })}
+              className="flex-1 border border-dim/40 hover:border-dim text-dim py-2 rounded-card text-xs font-body transition-colors min-h-[36px]"
             >
               No
             </button>

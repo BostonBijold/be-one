@@ -65,8 +65,8 @@ export function computeTimeline(
       const minutes = item.isConditional ? 0 : item.projectedMinutes;
       return { id: item.id, minutes, colorState: "pending" as TimelineColorState };
     }
-    // missed / rest — zero width, same "contributes nothing" treatment as
-    // remainingMinutes in projected-finish.ts.
+    // missed / rest / not_applicable — zero width, same "contributes
+    // nothing" treatment as remainingMinutes in projected-finish.ts.
     return { id: item.id, minutes: 0, colorState: "pending" as TimelineColorState };
   });
 

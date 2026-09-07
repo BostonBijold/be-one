@@ -1,6 +1,16 @@
 import mongoose, { Schema, Document, model, models } from "mongoose";
 
-export type LogState = "in_progress" | "paused" | "done" | "missed" | "rest";
+// "not_applicable" is the answer to a conditional item's ("Do you need to
+// shave today?") gate when the answer is No — distinct from "rest": rest
+// protects a streak for something that WAS expected but intentionally
+// skipped, while not_applicable means the item was never expected today at
+// all. Terminal for control-flow purposes everywhere "done"/"missed"/"rest"
+// are (group completion, session advance/resume, Live Activity building) —
+// see every "done" || "missed" || "rest" check across the app, all of which
+// were extended to include it — but excluded like a not-scheduled day for
+// weekly-progress/analytics math (lib/routine-progress.ts) and never counts
+// toward actualMinutes/timer tracking.
+export type LogState = "in_progress" | "paused" | "done" | "missed" | "rest" | "not_applicable";
 
 // Where a routine_review session was triggered from — see docs/features/routine-review.md.
 // "notification" isn't wired up to anything yet (a future "it's been a month" nudge),
@@ -85,7 +95,7 @@ const RoutineLogSchema = new Schema<IRoutineLog>(
     startedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     pausedSeconds: { type: Number, default: 0 },
-    state: { type: String, enum: ["in_progress", "paused", "done", "missed", "rest"], required: true },
+    state: { type: String, enum: ["in_progress", "paused", "done", "missed", "rest", "not_applicable"], required: true },
     note: { type: String, default: null },
     isBackEntry: { type: Boolean, default: false },
     sessionGroupId: { type: Schema.Types.ObjectId, ref: "RoutineGroup", default: null },

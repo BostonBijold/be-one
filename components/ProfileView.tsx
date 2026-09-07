@@ -7,6 +7,7 @@ import { Copy, Check } from "lucide-react";
 import Header from "@/components/Header";
 import { ApiKeyBridge } from "@/lib/native/api-key-bridge";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import DeleteAccountForm from "@/components/DeleteAccountForm";
 
 interface Props {
   name: string;
@@ -107,6 +108,8 @@ export default function ProfileView({ name, email, today, skipAuth, hasPassword 
               Sign out
             </button>
           )}
+
+          {!skipAuth && <DeleteAccountForm hasPassword={hasPassword} />}
 
           {skipAuth && (
             <div className="px-4 py-3 rounded-card bg-tobacco/10 border border-tobacco/20">

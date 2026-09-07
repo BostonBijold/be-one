@@ -6,7 +6,7 @@ import SignInForm from "@/components/SignInForm";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string };
+  searchParams: { callbackUrl?: string; deleted?: string };
 }) {
   const session = await auth();
   const destination = searchParams.callbackUrl || "/welcome";
@@ -23,6 +23,14 @@ export default async function LoginPage({
             Build your routines. Build yourself.
           </p>
         </div>
+
+        {searchParams.deleted && (
+          <div className="mb-6 px-4 py-3 rounded-card bg-olive/10 border border-olive/20">
+            <p className="font-mono text-olive-light text-xs">
+              Your account has been deleted.
+            </p>
+          </div>
+        )}
 
         <form
           action={async () => {

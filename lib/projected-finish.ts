@@ -4,7 +4,11 @@
 // testable in isolation, the same way lib/routine-progress.ts separates
 // weekly-progress math from the components that render it.
 
-export type ItemProjectionState = "done" | "missed" | "rest" | "active" | "pending";
+// "not_applicable" (a conditional item answered "No" — see
+// models/RoutineLog.ts) falls into the same catch-all branch as
+// missed/rest below in remainingMinutes/computeTimeline: already resolved,
+// contributes nothing further, same as those two.
+export type ItemProjectionState = "done" | "missed" | "rest" | "not_applicable" | "active" | "pending";
 
 export interface ItemProjection {
   projectedMinutes: number;
@@ -77,7 +81,7 @@ export function remainingMinutes(items: ItemProjection[], nowMs: number = Date.n
     if (item.state === "pending") {
       return total + (item.isConditional ? 0 : item.projectedMinutes);
     }
-    return total; // done / missed / rest — already spent or zeroed out
+    return total; // done / missed / rest / not_applicable — already spent or zeroed out
   }, 0);
 }
 

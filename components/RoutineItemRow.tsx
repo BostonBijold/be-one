@@ -65,6 +65,7 @@ const BORDER: Record<LogState, string> = {
   done:        "border-l-[3px] border-l-olive",
   missed:      "border-l-[3px] border-l-burgundy",
   rest:        "border-l-[3px] border-l-blue-muted",
+  not_applicable: "border-l-[3px] border-l-dim",
 };
 
 const BADGE: Record<LogState, string> = {
@@ -73,6 +74,7 @@ const BADGE: Record<LogState, string> = {
   done:        "text-olive bg-olive/10",
   missed:      "text-burgundy-light bg-burgundy/10",
   rest:        "text-blue-muted bg-blue-muted/10",
+  not_applicable: "text-dim bg-dim/10",
 };
 
 const LABEL: Record<LogState, string> = {
@@ -81,6 +83,7 @@ const LABEL: Record<LogState, string> = {
   done:        "Done",
   missed:      "Missed",
   rest:        "Rest",
+  not_applicable: "N/A",
 };
 
 export default function RoutineItemRow({
@@ -327,8 +330,12 @@ export default function RoutineItemRow({
                   scheduled by day, decided fresh each time it's reached.
                   Replaces the normal Start/Missed/Rest panel entirely: Yes
                   routes into exactly what Start would have done; No logs it
-                  as a rest day directly, same as tapping Rest would. See
-                  models/RoutineItem.ts's isConditional and
+                  as not_applicable — distinct from Rest, since this wasn't
+                  something skipped, it just wasn't needed today at all (see
+                  models/RoutineLog.ts's LogState). Excluded from streaks/
+                  weekly-progress/analytics like a not-scheduled day (see
+                  lib/routine-progress.ts) rather than counted as a
+                  streak-protecting success the way Rest is. See also
                   lib/projected-finish.ts's remainingMinutes, which excludes
                   this item from the time estimate until answered. */}
               {item.isConditional && !isSpecial ? (
@@ -342,8 +349,8 @@ export default function RoutineItemRow({
                       Yes
                     </button>
                     <button
-                      onClick={() => onStateChange("rest", { isBackEntry })}
-                      className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                      onClick={() => onStateChange("not_applicable", { isBackEntry })}
+                      className="flex-1 border border-dim/40 hover:border-dim text-dim py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
                     >
                       No
                     </button>
