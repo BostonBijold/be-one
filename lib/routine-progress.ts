@@ -45,13 +45,21 @@ function timingFor(actualMinutes: number | null, targetMinutes: number | null): 
 // success" for successCount/pacing below. This is a read-time
 // interpretation only — never write a synthetic log to represent it.
 //
+// "not_applicable" (a conditional item's "No, not needed today" answer —
+// see models/RoutineLog.ts) is deliberately mapped to the exact same
+// DayBreakdown as "not_scheduled" below, not given its own case: both mean
+// "this day doesn't count toward or against this item at all," they just
+// arrive at that via a schedule vs. a same-day decision. Collapsing them
+// means every consumer (StreakDots, the Analytics day-strip) renders and
+// excludes it identically for free, with no separate styling to keep in sync.
+//
 // targetMinutes: the item's projected/target minutes, or null for item
 // types with no real time target (checkbox, stopwatch) — timing is always
 // null for those, regardless of actualMinutes.
 export function computeWeeklyProgress(
   scheduledDays: number[],
   successThreshold: number,
-  logsByDate: Record<string, { state: "done" | "missed" | "rest"; actualMinutes: number | null } | undefined>,
+  logsByDate: Record<string, { state: "done" | "missed" | "rest" | "not_applicable"; actualMinutes: number | null } | undefined>,
   weekDates: string[], // Sunday→Saturday, from calendarWeekDates
   today: string,
   targetMinutes: number | null = null
@@ -70,6 +78,8 @@ export function computeWeeklyProgress(
     if (log?.state === "done") return { date, state: "done", timing: timingFor(log.actualMinutes, targetMinutes) };
     if (log?.state === "rest") return { date, state: "rest", timing: null };
     if (log?.state === "missed") return { date, state: "missed", timing: null };
+    // See the function comment above — not_applicable reads as not_scheduled.
+    if (log?.state === "not_applicable") return { date, state: "not_scheduled", timing: null };
     // No log at all: today is still open (unresolved, not yet a miss) —
     // only a *strictly past* day with nothing logged defaults to unlogged.
     if (date === today) return { date, state: "pending", timing: null };

@@ -131,6 +131,11 @@ export default function BottomNav() {
       : fmtClock(elapsedSeconds)
     : "";
 
+  // Routine Review stages edits in component state and is exited only via its
+  // own ✕ / Finish (see RoutineReviewFlow.tsx) — a nav tap there would
+  // silently drop unsaved changes, so the nav steps aside on that route.
+  if (pathname.startsWith("/routines/review")) return null;
+
   return (
     <>
       {quoteOpen && (

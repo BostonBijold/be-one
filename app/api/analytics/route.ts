@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
       const log = logMap[itemId]?.[date];
       return {
         date,
-        state: (log?.state ?? null) as "done" | "missed" | "rest" | null,
+        state: (log?.state ?? null) as "done" | "missed" | "rest" | "not_applicable" | null,
         actualMinutes: (log?.actualMinutes ?? null) as number | null,
       };
     });
@@ -170,6 +170,11 @@ export async function GET(req: NextRequest) {
     const doneCount = doneDays.length;
     const missedCount = daily.filter((d) => d.state === "missed").length;
     const restCount = daily.filter((d) => d.state === "rest").length;
+    // Excluded from every count below, same as a day outside scheduledDays —
+    // see lib/routine-progress.ts's not_applicable → not_scheduled mapping.
+    // Only matters for the 30-day view here; the 7-day weeklyProgress below
+    // already gets this for free via that mapping.
+    const notApplicableCount = daily.filter((d) => d.state === "not_applicable").length;
 
     const isCheckbox = item.itemType === "checkbox";
     const isStopwatch = item.itemType === "stopwatch";
@@ -190,10 +195,10 @@ export async function GET(req: NextRequest) {
     // No real time target for checkbox/stopwatch items — timing color is
     // always null for those regardless of actualMinutes (see routine-progress.ts).
     const targetMinutes = !isCheckbox && !isStopwatch ? item.projectedMinutes : null;
-    const weeklyLogsByDate: Record<string, { state: "done" | "missed" | "rest"; actualMinutes: number | null }> = {};
+    const weeklyLogsByDate: Record<string, { state: "done" | "missed" | "rest" | "not_applicable"; actualMinutes: number | null }> = {};
     for (const date of dates) {
       const log = logMap[itemId]?.[date];
-      if (log?.state === "done" || log?.state === "missed" || log?.state === "rest") {
+      if (log?.state === "done" || log?.state === "missed" || log?.state === "rest" || log?.state === "not_applicable") {
         weeklyLogsByDate[date] = { state: log.state, actualMinutes: log.actualMinutes ?? null };
       }
     }
@@ -212,13 +217,16 @@ export async function GET(req: NextRequest) {
       doneCount,
       missedCount,
       restCount,
-      unloggedCount: elapsedDates.length - doneCount - missedCount - restCount,
+      // Both denominators exclude not_applicable days, same as a day outside
+      // scheduledDays would be — a "not needed today" answer shouldn't read
+      // as an unlogged/missing day, and shouldn't make 100% unreachable.
+      unloggedCount: elapsedDates.length - doneCount - missedCount - restCount - notApplicableCount,
       avgActualMins,
       avgVariance,
       weeklyProgress,
       completionRate: engagedDays > 0 ? doneCount / engagedDays : 0,
       engagedDays,
-      totalDays: elapsedDates.length,
+      totalDays: elapsedDates.length - notApplicableCount,
       itemType: (item.itemType ?? "standard") as string,
     };
   });

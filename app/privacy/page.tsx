@@ -98,12 +98,14 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="font-heading text-xl text-text mb-3">Data Retention &amp; Deletion</h2>
             <p>
-              Your data is retained for as long as your account is active. To request deletion
-              of your account and all associated data, contact us at{" "}
+              Your data is retained for as long as your account is active. You can permanently
+              delete your account and all associated data at any time from your Profile page in
+              the app — this removes your account immediately and cannot be undone. If you&apos;re
+              unable to access the app, you can instead request deletion by contacting us at{" "}
               <a href={`mailto:${SUPPORT_EMAIL}`} className="text-gold hover:underline">
                 {SUPPORT_EMAIL}
               </a>
-              . We will delete your data within a reasonable timeframe of a verified request.
+              , and we will delete your data within a reasonable timeframe of a verified request.
             </p>
           </section>
 

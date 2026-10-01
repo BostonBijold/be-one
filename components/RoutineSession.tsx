@@ -140,8 +140,9 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
   const isCountdown = !isCheckbox && !isStopwatch && !isSpecial;
   // Gates the ring/checkbox UI behind a "Do you need to do this today?"
   // Yes/No prompt for habits that aren't needed every time (shaving, etc.)
-  // — see models/RoutineItem.ts's isConditional. Saying No routes straight
-  // through handleRest, same as the normal Rest button elsewhere.
+  // — see models/RoutineItem.ts's isConditional. Saying No routes through
+  // handleNotApplicable, distinct from the normal Rest button elsewhere —
+  // see models/RoutineLog.ts's LogState.
   const isConditionalPending = !!currentItem?.isConditional && !isSpecial && !conditionalDecided;
 
   // Reaching a new item always starts clean — a stale "check-in open" flag
@@ -266,7 +267,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
       );
 
       const finishedIds = new Set(
-        records.filter((r) => r.state === "done" || r.state === "missed" || r.state === "rest").map((r) => r.routineItemId)
+        records.filter((r) => r.state === "done" || r.state === "missed" || r.state === "rest" || r.state === "not_applicable").map((r) => r.routineItemId)
       );
       const nextIndex = nextUnfinishedIndex(items, finishedIds, currentIndex);
       if (nextIndex !== -1) {
@@ -398,7 +399,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
               };
             }
             const rec = records.find((r) => r.routineItemId === it._id);
-            if (rec && (rec.state === "done" || rec.state === "missed" || rec.state === "rest")) {
+            if (rec && (rec.state === "done" || rec.state === "missed" || rec.state === "rest" || rec.state === "not_applicable")) {
               return {
                 projectedMinutes: it.projectedMinutes,
                 state: rec.state,
@@ -480,23 +481,23 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
       setSessionLogs((prev) => [...prev, log]);
       await saveLog(currentItem._id, state, actualMinutes);
 
-      // Skip past anything already FINISHED today (done/missed/rest), from
-      // ANY source — an earlier API call, a manual tap elsewhere, or this
-      // session itself. An in_progress or paused item is deliberately NOT
-      // skipped — it becomes current instead, resuming from its real banked
-      // time, since it's just something you (or another source) started
-      // earlier and haven't finished yet, not something to bypass. The walk
-      // below wraps back to the start of the list rather than stopping at
-      // the end, so a paused/pending item earlier in the list (jumped away
-      // from or jumped over) still gets revisited instead of silently
-      // ending the session. Re-fetch rather than trust sessionLogs/
-      // externalLogs, since either can be stale relative to an out-of-band
-      // completion that just happened.
+      // Skip past anything already FINISHED today (done/missed/rest/
+      // not_applicable), from ANY source — an earlier API call, a manual tap
+      // elsewhere, or this session itself. An in_progress or paused item is
+      // deliberately NOT skipped — it becomes current instead, resuming from
+      // its real banked time, since it's just something you (or another
+      // source) started earlier and haven't finished yet, not something to
+      // bypass. The walk below wraps back to the start of the list rather
+      // than stopping at the end, so a paused/pending item earlier in the
+      // list (jumped away from or jumped over) still gets revisited instead
+      // of silently ending the session. Re-fetch rather than trust
+      // sessionLogs/externalLogs, since either can be stale relative to an
+      // out-of-band completion that just happened.
       const records = await fetchDayLogs();
       const finishedIds = new Set(sessionLogs.map((l) => l.itemId));
       finishedIds.add(currentItem._id);
       for (const r of records) {
-        if (r.state === "done" || r.state === "missed" || r.state === "rest") finishedIds.add(r.routineItemId);
+        if (r.state === "done" || r.state === "missed" || r.state === "rest" || r.state === "not_applicable") finishedIds.add(r.routineItemId);
       }
 
       const nextIndex = nextUnfinishedIndex(items, finishedIds, currentIndex);
@@ -517,9 +518,10 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
   // without marking the current one done, missed, or rest. The item you're
   // leaving is paused, not completed: the per-item effect above switches the
   // active timer via switchActiveLog (sessionNav: true), which banks its
-  // elapsed time and marks it paused. Only an explicit Done/Missed/Rest (or
-  // the external API) ever marks an item. Only a FINISHED item (done/missed/
-  // rest) can't be jumped to — that's what Undo is for, not a jump.
+  // elapsed time and marks it paused. Only an explicit Done/Missed/Rest/N/A
+  // (or the external API) ever marks an item. Only a FINISHED item (done/
+  // missed/rest/not_applicable) can't be jumped to — that's what Undo is
+  // for, not a jump.
   const handleJumpTo = useCallback(
     async (index: number) => {
       if (phase !== "running" || index === currentIndex) return;
@@ -529,7 +531,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
       // state could be a moment stale if something finished it since the last render.
       const records = await fetchDayLogs();
       const targetLog = records.find((r) => r.routineItemId === target._id);
-      if (targetLog && (targetLog.state === "done" || targetLog.state === "missed" || targetLog.state === "rest")) {
+      if (targetLog && (targetLog.state === "done" || targetLog.state === "missed" || targetLog.state === "rest" || targetLog.state === "not_applicable")) {
         setJumpNotice(`${target.name} was already logged — refreshed.`);
         return;
       }
@@ -558,6 +560,10 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
   };
   const handleMissed = () => advance("missed", 0);
   const handleRest = () => advance("rest", 0);
+  // The conditional gate's "No" answer — see isConditionalPending below.
+  // Distinct from handleRest: not_applicable means the item was never
+  // expected today at all, not an intentional skip of something that was.
+  const handleNotApplicable = () => advance("not_applicable", 0);
 
   // ── Summary ─────────────────────────────────────────────────────────────────
   if (phase === "summary") {
@@ -568,7 +574,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
     // wrong relative to items.length.
     const logMap: Record<string, SessionLog> = {};
     for (const [id, l] of Object.entries(latestLogs)) {
-      if (l.state === "done" || l.state === "missed" || l.state === "rest") {
+      if (l.state === "done" || l.state === "missed" || l.state === "rest" || l.state === "not_applicable") {
         logMap[id] = { itemId: id, state: l.state, actualMinutes: l.actualMinutes };
       }
     }
@@ -576,7 +582,10 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
 
     const allLogs = Object.values(logMap);
     const totalActual = allLogs.reduce((s, l) => s + l.actualMinutes, 0);
-    const timedItems = items.filter((i) => i.itemType !== "checkbox");
+    // Excludes not_applicable items — a habit that wasn't needed today
+    // shouldn't count its projected minutes toward this session's total,
+    // same reasoning as RoutineGroupCard's own projected/actual summary.
+    const timedItems = items.filter((i) => i.itemType !== "checkbox" && logMap[i._id]?.state !== "not_applicable");
     const totalProjected = timedItems.reduce((s, i) => s + i.projectedMinutes, 0);
     const doneCount = allLogs.filter((l) => l.state === "done").length;
 
@@ -629,8 +638,8 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                       {variance > 0 ? `+${variance}m` : variance < 0 ? `${variance}m` : "on target"}
                     </span>
                   )}
-                  <span className={`font-mono text-xs ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : "text-blue-muted"}`}>
-                    {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : "~"}
+                  <span className={`font-mono text-xs ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : log.state === "not_applicable" ? "text-dim" : "text-blue-muted"}`}>
+                    {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : log.state === "not_applicable" ? "–" : "~"}
                   </span>
                 </div>
               );
@@ -652,14 +661,14 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
   // outside "Start Routine") count as done too, so they don't render as "upcoming".
   const externalDoneIds = new Set(
     Object.entries(externalLogs ?? {})
-      .filter(([, l]) => l.state === "done" || l.state === "missed" || l.state === "rest")
+      .filter(([, l]) => l.state === "done" || l.state === "missed" || l.state === "rest" || l.state === "not_applicable")
       .map(([id]) => id)
   );
   // Same, but from live server state rather than the static prop — covers
   // anything completed mid-session by another source (a jump, an external call).
   const liveDoneIds = new Set(
     Object.entries(latestLogs)
-      .filter(([, l]) => l.state === "done" || l.state === "missed" || l.state === "rest")
+      .filter(([, l]) => l.state === "done" || l.state === "missed" || l.state === "rest" || l.state === "not_applicable")
       .map(([id]) => id)
   );
   const loggedIds = new Set([
@@ -695,7 +704,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
       return { projectedMinutes: item.projectedMinutes, state: "active", targetInstant: activeTargetInstant };
     }
     const sessionLog = sessionLogs.find((l) => l.itemId === item._id);
-    if (sessionLog && (sessionLog.state === "done" || sessionLog.state === "missed" || sessionLog.state === "rest")) {
+    if (sessionLog && (sessionLog.state === "done" || sessionLog.state === "missed" || sessionLog.state === "rest" || sessionLog.state === "not_applicable")) {
       return {
         projectedMinutes: item.projectedMinutes,
         state: sessionLog.state,
@@ -703,7 +712,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
       };
     }
     const live = latestLogs[item._id];
-    if (live && (live.state === "done" || live.state === "missed" || live.state === "rest")) {
+    if (live && (live.state === "done" || live.state === "missed" || live.state === "rest" || live.state === "not_applicable")) {
       return {
         projectedMinutes: item.projectedMinutes,
         state: live.state,
@@ -711,7 +720,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
       };
     }
     const ext = externalLogs?.[item._id];
-    if (ext && (ext.state === "done" || ext.state === "missed" || ext.state === "rest")) {
+    if (ext && (ext.state === "done" || ext.state === "missed" || ext.state === "rest" || ext.state === "not_applicable")) {
       return {
         projectedMinutes: item.projectedMinutes,
         state: ext.state,
@@ -818,8 +827,8 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                 Yes
               </button>
               <button
-                onClick={handleRest}
-                className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-3 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                onClick={handleNotApplicable}
+                className="flex-1 border border-dim/40 hover:border-dim text-dim py-3 rounded-card text-sm font-body transition-colors min-h-[44px]"
               >
                 No
               </button>
@@ -1013,9 +1022,9 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
             const ext = !isCurrent ? externalLogs?.[item._id] : undefined;
             const log: SessionLog | undefined =
               sessionLog ??
-              (live && (live.state === "done" || live.state === "missed" || live.state === "rest")
+              (live && (live.state === "done" || live.state === "missed" || live.state === "rest" || live.state === "not_applicable")
                 ? { itemId: item._id, state: live.state, actualMinutes: live.actualMinutes }
-                : ext && (ext.state === "done" || ext.state === "missed" || ext.state === "rest")
+                : ext && (ext.state === "done" || ext.state === "missed" || ext.state === "rest" || ext.state === "not_applicable")
                   ? { itemId: item._id, state: ext.state, actualMinutes: ext.actualMinutes ?? 0 }
                   : undefined);
             const isDone = loggedIds.has(item._id);
@@ -1061,8 +1070,8 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                   {isItemCheckbox ? "✓" : isItemStopwatch ? "⏱" : `${item.projectedMinutes}m`}
                 </span>
                 {log && (
-                  <span className={`font-mono text-xs flex-shrink-0 ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : "text-blue-muted"}`}>
-                    {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : "~"}
+                  <span className={`font-mono text-xs flex-shrink-0 ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : log.state === "not_applicable" ? "text-dim" : "text-blue-muted"}`}>
+                    {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : log.state === "not_applicable" ? "–" : "~"}
                   </span>
                 )}
                 {isPausedElsewhere && (

@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(serializeLog(log));
   }
 
-  // A terminal state (done/missed/rest) is never session-anchored, regardless
+  // A terminal state (done/missed/rest/not_applicable) is never session-anchored, regardless
   // of which state this log was in before — same rule PATCH enforces.
   // Read the prior sessionGroupId before the write below clears it — that's
   // the only record of which RoutineSession (if any) this completion
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   ).lean();
 
-  if (priorSessionGroupId && (state === "done" || state === "missed" || state === "rest")) {
+  if (priorSessionGroupId && (state === "done" || state === "missed" || state === "rest" || state === "not_applicable")) {
     await recordSessionCompletion(userId, priorSessionGroupId, date, routineItemId, state, actualMinutes ?? 0);
   }
 

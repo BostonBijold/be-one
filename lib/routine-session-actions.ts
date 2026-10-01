@@ -49,13 +49,13 @@ export async function findNextItemInGroup(userId: string, groupId: string, date:
 }
 
 // True once every active item in the group has a terminal (done/missed/
-// rest) log for date — what closes a RoutineSession. An empty/deleted group
-// is never "resolved" (nothing to close against).
+// rest/not_applicable) log for date — what closes a RoutineSession. An
+// empty/deleted group is never "resolved" (nothing to close against).
 export async function isGroupFullyResolved(userId: string, groupId: string, date: string): Promise<boolean> {
   const { items, logs } = await fetchGroupItemsAndLogs(userId, groupId, date);
   if (items.length === 0) return false;
   const terminalIds = new Set(
-    logs.filter((l) => l.state === "done" || l.state === "missed" || l.state === "rest").map((l) => l.routineItemId.toString())
+    logs.filter((l) => l.state === "done" || l.state === "missed" || l.state === "rest" || l.state === "not_applicable").map((l) => l.routineItemId.toString())
   );
   return items.every((i) => terminalIds.has(i._id.toString()));
 }
@@ -87,8 +87,8 @@ export async function ensureOpenSession(userId: string, groupId: string, date: s
 // on the main Routines list, never anchored via sessionGroupId) has nothing
 // to match here, and callers simply don't call this in that case. Appends
 // to completionSequence, folds actualMinutes into totalActualMinutes for
-// `done` (missed/rest contribute 0 — same "terminal-but-zero" treatment
-// Story 2's live-projection math uses), then closes the session the moment
+// `done` (missed/rest/not_applicable contribute 0 — same "terminal-but-zero"
+// treatment Story 2's live-projection math uses), then closes the session the moment
 // this leaves every active item in the group with a terminal log.
 export async function recordSessionCompletion(
   userId: string,

@@ -158,7 +158,7 @@ export default async function RoutinesPage({
   const weekLogs = rawWeekLogs.map((l) => ({
     routineItemId: l.routineItemId.toString(),
     date: l.date,
-    state: l.state as "done" | "missed" | "rest",
+    state: l.state as LogState,
     actualMinutes: l.actualMinutes ?? null,
   }));
 

@@ -46,7 +46,7 @@ async function buildRoutineTimeline(
       };
     }
     const log = logByItemId.get(id);
-    if (log && (log.state === "done" || log.state === "missed" || log.state === "rest")) {
+    if (log && (log.state === "done" || log.state === "missed" || log.state === "rest" || log.state === "not_applicable")) {
       return {
         projectedMinutes: it.projectedMinutes,
         state: log.state,

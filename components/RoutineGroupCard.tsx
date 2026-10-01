@@ -92,6 +92,7 @@ const STATE_COLOR: Record<LogState, string> = {
   done:        "text-olive",
   missed:      "text-burgundy-light",
   rest:        "text-blue-muted",
+  not_applicable: "text-dim",
 };
 const STATE_SYMBOL: Record<LogState, string> = {
   in_progress: "▶",
@@ -99,6 +100,7 @@ const STATE_SYMBOL: Record<LogState, string> = {
   done:        "✓",
   missed:      "✗",
   rest:        "~",
+  not_applicable: "–",
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -143,7 +145,7 @@ export default function RoutineGroupCard({
   // in_progress doesn't count as complete — the item is actively being timed
   const isComplete = visibleItems.length > 0 && visibleItems.every((i) => {
     const s = logs[i._id]?.state;
-    return s === "done" || s === "missed" || s === "rest";
+    return s === "done" || s === "missed" || s === "rest" || s === "not_applicable";
   });
 
   // Past dates: always start expanded so history is visible
@@ -168,8 +170,14 @@ export default function RoutineGroupCard({
     }
   }, [isComplete, isPastDate]);
 
-  const doneCount = visibleItems.filter((i) => logs[i._id]?.state === "done").length;
-  const timedItems = visibleItems.filter((i) => i.itemType !== "checkbox");
+  // Excludes not_applicable items from the denominator too — a habit marked
+  // "not needed today" shouldn't make the group's X/Y count permanently
+  // short of the total, same reasoning as the weekly-progress math.
+  const countableItems = visibleItems.filter((i) => logs[i._id]?.state !== "not_applicable");
+  const doneCount = countableItems.filter((i) => logs[i._id]?.state === "done").length;
+  // Excludes not_applicable too — a habit that wasn't needed today shouldn't
+  // count its projected minutes toward the group's projected/actual variance.
+  const timedItems = countableItems.filter((i) => i.itemType !== "checkbox");
   const projectedMins = timedItems.reduce((s, i) => s + i.projectedMinutes, 0);
   const actualMins = timedItems.reduce((s, i) => s + (logs[i._id]?.actualMinutes ?? 0), 0);
   const variance = actualMins - projectedMins;
@@ -217,7 +225,7 @@ export default function RoutineGroupCard({
         <div className="flex items-center gap-3">
           {!isComplete && !allOffToday && (
             <span className="font-mono text-xs">
-              <span className="text-gold">{doneCount}/{visibleItems.length}</span>
+              <span className="text-gold">{doneCount}/{countableItems.length}</span>
               <span className="text-dim"> · {fmtMins(projectedMins)}</span>
             </span>
           )}

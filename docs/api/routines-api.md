@@ -66,11 +66,20 @@ Collection: `routinelogs`. Schema (`models/RoutineLog.ts`): `userId`, `routineIt
 ```ts
 {
   entryPoint: "sunday_prompt" | "analytics_button" | "notification";
-  groupId: ObjectId;       // which routine group this session actually reviewed
+  groupId: ObjectId;       // first routine group this session reviewed (the only one, usually)
   changesMade: boolean;
   itemGoalChanges?: Array<{ routineItemId: ObjectId; oldMinutes: number; newMinutes: number }>;
   startTimeChange?: { old: string | null; new: string | null };
   reorder?: { old: ObjectId[]; new: ObjectId[] };
+  // Only when one session reviewed more than one group (sunday_prompt → back
+  // to the picker): the top-level groupId/changes describe the first group,
+  // each later one lands here. changesMade above is session-wide.
+  additionalGroups?: Array<{
+    groupId: ObjectId;
+    itemGoalChanges?: Array<{ routineItemId: ObjectId; oldMinutes: number; newMinutes: number }>;
+    startTimeChange?: { old: string | null; new: string | null };
+    reorder?: { old: ObjectId[]; new: ObjectId[] };
+  }>;
 }
 ```
 

@@ -657,8 +657,11 @@ export default function RoutinesView({
   );
 
   const totalDone = Object.values(logs).filter((l) => l.state === "done").length;
+  // Excludes items logged not_applicable today — a conditional habit marked
+  // "not needed" shouldn't make a perfect day permanently unreachable, same
+  // reasoning as the weekly-progress math's denominator (lib/routine-progress.ts).
   const totalItems = groups.reduce(
-    (acc, g) => acc + g.items.filter((i) => isItemVisibleOn(i, selectedDate)).length,
+    (acc, g) => acc + g.items.filter((i) => isItemVisibleOn(i, selectedDate) && logs[i._id]?.state !== "not_applicable").length,
     0
   );
 
