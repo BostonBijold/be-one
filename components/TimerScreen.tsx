@@ -152,7 +152,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
       className="flex items-center gap-1 mt-1 mx-auto font-mono text-xs text-dim min-h-[32px] px-2"
       aria-label="Edit elapsed time"
     >
-      <Pencil size={11} />
+      <Pencil size={13} />
       edit time
     </button>
   );
@@ -167,7 +167,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
     const circumference = 2 * Math.PI * r;
     const dashOffset = circumference * (1 - Math.min(ratio, 1));
     const ringColor = isOver ? "#7a2e2e" : is75 ? "#c47a2a" : "#5a6b35";
-    const timeColor = isOver ? "#a03a3a" : "#e8e0cc";
+    const timeColor = isOver ? "#cf6a5f" : "#ece5d3";
     const remaining = Math.max(0, target - elapsed);
     const overAmount = Math.max(0, elapsed - target);
     const timeDisplay = isOver
@@ -181,7 +181,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
             ← back
           </button>
           <div className="text-right">
-            <p className="font-mono text-dim text-[10px] uppercase tracking-wider">target</p>
+            <p className="font-mono text-dim text-caption uppercase tracking-wider">target</p>
             <p className="font-mono text-muted text-sm">{item.projectedMinutes}m</p>
           </div>
         </div>
@@ -197,7 +197,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
           <div className="flex-1 flex items-center justify-center">
             <div className="relative w-56 h-56">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r={r} fill="none" stroke="#2e2c22" strokeWidth="10" />
+                <circle cx="100" cy="100" r={r} fill="none" stroke="#38352a" strokeWidth="10" />
                 <circle
                   cx="100" cy="100" r={r}
                   fill="none"
@@ -233,7 +233,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
         <div className="px-4 pb-12 space-y-3 w-full">
           <button
             onClick={handleComplete}
-            className="w-full py-4 rounded-card bg-olive text-text font-body font-medium text-base"
+            className="w-full py-4 rounded-card bg-olive text-bg font-body font-medium text-base"
           >
             Done · log {actualMinutes}m
           </button>
@@ -270,7 +270,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
           ← back
         </button>
         <div className="text-right">
-          <p className="font-mono text-dim text-[10px] uppercase tracking-wider">stopwatch</p>
+          <p className="font-mono text-dim text-caption uppercase tracking-wider">stopwatch</p>
           <p className="font-mono text-muted text-sm">no target</p>
         </div>
       </div>
@@ -286,7 +286,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
         <div className="flex-1 flex items-center justify-center">
           <div className="relative w-56 h-56">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r={r} fill="none" stroke="#2e2c22" strokeWidth="10" />
+              <circle cx="100" cy="100" r={r} fill="none" stroke="#38352a" strokeWidth="10" />
               <circle
                 cx="100" cy="100" r={r}
                 fill="none"
@@ -320,7 +320,7 @@ export default function TimerScreen({ item, initialElapsed = 0, onComplete, onMi
       <div className="px-4 pb-12 space-y-3 w-full">
         <button
           onClick={handleComplete}
-          className="w-full py-4 rounded-card bg-olive text-text font-body font-medium text-base"
+          className="w-full py-4 rounded-card bg-olive text-bg font-body font-medium text-base"
         >
           Done · log {actualMinutes}m
         </button>

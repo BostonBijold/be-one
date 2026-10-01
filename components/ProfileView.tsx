@@ -66,7 +66,7 @@ export default function ProfileView({ name, email, today, skipAuth, hasPassword 
           {/* Change password — only for accounts with a password set */}
           {hasPassword && (
             <div className="bg-card rounded-card border border-border p-5">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+              <p className="font-mono text-caption uppercase tracking-widest text-dim mb-3">
                 Change Password
               </p>
               <ChangePasswordForm />
@@ -75,7 +75,7 @@ export default function ProfileView({ name, email, today, skipAuth, hasPassword 
 
           {/* External API key */}
           <div className="bg-card rounded-card border border-border p-5">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-2">
+            <p className="font-mono text-caption uppercase tracking-widest text-dim mb-2">
               External API Key
             </p>
             <p className="font-body text-xs text-muted mb-3">
@@ -83,7 +83,7 @@ export default function ProfileView({ name, email, today, skipAuth, hasPassword 
             </p>
             {apiKey ? (
               <div className="flex items-center gap-2 bg-bg border border-border rounded-card px-3 py-2.5">
-                <span className="font-mono text-[11px] text-text break-all select-all flex-1">
+                <span className="font-mono text-[13px] text-text break-all select-all flex-1">
                   {apiKey}
                 </span>
                 <button
@@ -91,7 +91,7 @@ export default function ProfileView({ name, email, today, skipAuth, hasPassword 
                   aria-label="Copy API key"
                   className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-dim hover:text-olive transition-colors"
                 >
-                  {copied ? <Check size={14} className="text-olive" /> : <Copy size={14} />}
+                  {copied ? <Check size={16} className="text-olive" /> : <Copy size={16} />}
                 </button>
               </div>
             ) : (

@@ -48,7 +48,7 @@ export default function DateNav({ selectedDate, today, maxDaysBack = 7, onChange
           {formatLabel(selectedDate, today)}
         </p>
         {!isToday && (
-          <p className="font-mono text-dim text-[10px] mt-0.5 tracking-widest">{selectedDate}</p>
+          <p className="font-mono text-dim text-caption mt-0.5 tracking-widest">{selectedDate}</p>
         )}
       </div>
 

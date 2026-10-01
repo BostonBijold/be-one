@@ -81,7 +81,7 @@ export function IconPicker({
           }`}
           aria-label={name}
         >
-          <HabitIcon name={name} size={16} strokeWidth={1.75} />
+          <HabitIcon name={name} size={20} strokeWidth={1.75} />
         </button>
       ))}
     </div>

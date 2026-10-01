@@ -91,7 +91,7 @@ const STATE_COLOR: Record<LogState, string> = {
   paused:      "text-amber",
   done:        "text-olive",
   missed:      "text-burgundy-light",
-  rest:        "text-blue-muted",
+  rest:        "text-blue-light",
   not_applicable: "text-dim",
 };
 const STATE_SYMBOL: Record<LogState, string> = {
@@ -200,23 +200,23 @@ export default function RoutineGroupCard({
   return (
     <section>
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-3 min-h-[44px]">
+      <div className="flex items-center justify-between gap-2 mb-3 min-h-[44px]">
         <button className="flex items-center gap-2 text-left flex-1" onClick={toggle}>
-          <h2 className="font-heading text-lg text-text">{group.name}</h2>
+          <h2 className="font-heading text-lg leading-tight text-text">{group.name}</h2>
           {allOffToday ? (
-            <span className="font-mono text-[10px] text-dim px-2 py-0.5 rounded-pill border border-border">
+            <span className="font-mono text-caption text-dim px-2 py-0.5 rounded-pill whitespace-nowrap flex-shrink-0 border border-border">
               Off today
             </span>
           ) : isComplete && !isPastDate ? (
-            <span className="font-mono text-[10px] text-olive bg-olive/10 px-2 py-0.5 rounded-pill">
+            <span className="font-mono text-caption text-olive bg-olive/10 px-2 py-0.5 rounded-pill whitespace-nowrap flex-shrink-0">
               ✓ Done
             </span>
           ) : beforeWindow && group.startTime ? (
-            <span className="font-mono text-[10px] text-dim px-2 py-0.5 rounded-pill border border-border">
+            <span className="font-mono text-caption text-dim px-2 py-0.5 rounded-pill whitespace-nowrap flex-shrink-0 border border-border">
               starts {fmtTime(group.startTime)}
             </span>
           ) : pastTimeframe && !isComplete ? (
-            <span className="font-mono text-[10px] text-dim px-2 py-0.5 rounded-pill border border-border">
+            <span className="font-mono text-caption text-dim px-2 py-0.5 rounded-pill whitespace-nowrap flex-shrink-0 border border-border">
               {collapseAfter ? `by ${fmtTime(collapseAfter)}` : "window passed"}
             </span>
           ) : null}
@@ -224,7 +224,7 @@ export default function RoutineGroupCard({
 
         <div className="flex items-center gap-3">
           {!isComplete && !allOffToday && (
-            <span className="font-mono text-xs">
+            <span className="font-mono text-xs whitespace-nowrap">
               <span className="text-gold">{doneCount}/{countableItems.length}</span>
               <span className="text-dim"> · {fmtMins(projectedMins)}</span>
             </span>
@@ -265,7 +265,7 @@ export default function RoutineGroupCard({
                 {fmtMins(actualMins)} actual
               </span>
               {variance !== 0 && actualMins > 0 && (
-                <span className={`font-mono text-[10px] ${actualColor} ml-auto`}>
+                <span className={`font-mono text-caption ${actualColor} ml-auto`}>
                   {variance > 0 ? `+${fmtMins(variance)}` : `-${fmtMins(Math.abs(variance))}`}
                 </span>
               )}
@@ -278,12 +278,12 @@ export default function RoutineGroupCard({
                 <span key={item._id} className="flex items-center gap-1">
                   <HabitIcon
                     name={item.icon}
-                    size={14}
+                    size={16}
                     strokeWidth={1.75}
                     className={log ? STATE_COLOR[log.state] : "text-dim"}
                   />
                   <span
-                    className={`font-mono text-[10px] leading-none font-semibold ${
+                    className={`font-mono text-caption leading-none font-semibold ${
                       log ? STATE_COLOR[log.state] : "text-dim"
                     }`}
                   >
@@ -309,12 +309,12 @@ export default function RoutineGroupCard({
                 <span key={item._id} className="flex items-center gap-1">
                   <HabitIcon
                     name={item.icon}
-                    size={14}
+                    size={16}
                     strokeWidth={1.75}
                     className={log ? STATE_COLOR[log.state] : "text-dim opacity-40"}
                   />
                   {log && (
-                    <span className={`font-mono text-[10px] leading-none font-semibold ${STATE_COLOR[log.state]}`}>
+                    <span className={`font-mono text-caption leading-none font-semibold ${STATE_COLOR[log.state]}`}>
                       {STATE_SYMBOL[log.state]}
                     </span>
                   )}
@@ -386,7 +386,7 @@ export default function RoutineGroupCard({
             return (
               <button
                 onClick={() => onStartRoutine(group, firstIncompleteIdx)}
-                className="mt-3 w-full flex items-center justify-center gap-2 bg-olive text-text font-body font-medium py-3.5 rounded-card min-h-[48px] active:opacity-90 transition-opacity"
+                className="mt-3 w-full flex items-center justify-center gap-2 bg-olive text-bg font-body font-medium py-3.5 rounded-card min-h-[48px] active:opacity-90 transition-opacity"
               >
                 <Play size={15} fill="currentColor" />
                 {hasStarted ? "Continue Routine" : "Start Routine"}

@@ -153,7 +153,7 @@ function SortableRow({
           className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-burgundy/10 hover:bg-burgundy/20 text-burgundy-light transition-colors"
           aria-label="Remove"
         >
-          <X size={14} />
+          <X size={16} />
         </button>
       </div>
 
@@ -162,7 +162,7 @@ function SortableRow({
         <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
           {/* Type toggle */}
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+            <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
               Type
             </label>
             <div className="flex bg-bg border border-border rounded-card p-0.5">
@@ -170,7 +170,7 @@ function SortableRow({
                 type="button"
                 onClick={() => setEditType("standard")}
                 className={`flex-1 py-1.5 rounded-card font-mono text-xs transition-colors ${
-                  editType === "standard" ? "bg-olive text-text" : "text-dim"
+                  editType === "standard" ? "bg-olive text-bg" : "text-dim"
                 }`}
               >
                 ▶ Countdown
@@ -179,7 +179,7 @@ function SortableRow({
                 type="button"
                 onClick={() => setEditType("stopwatch")}
                 className={`flex-1 py-1.5 rounded-card font-mono text-xs transition-colors ${
-                  editType === "stopwatch" ? "bg-olive text-text" : "text-dim"
+                  editType === "stopwatch" ? "bg-olive text-bg" : "text-dim"
                 }`}
               >
                 ⏱ Stopwatch
@@ -188,7 +188,7 @@ function SortableRow({
                 type="button"
                 onClick={() => setEditType("checkbox")}
                 className={`flex-1 py-1.5 rounded-card font-mono text-xs transition-colors ${
-                  editType === "checkbox" ? "bg-olive text-text" : "text-dim"
+                  editType === "checkbox" ? "bg-olive text-bg" : "text-dim"
                 }`}
               >
                 ✓ Checkbox
@@ -198,7 +198,7 @@ function SortableRow({
           {/* Name + Minutes */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+              <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
                 Name
               </label>
               <input
@@ -210,7 +210,7 @@ function SortableRow({
             </div>
             {editType === "standard" && (
               <div className="flex-shrink-0 w-20">
-                <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+                <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
                   Minutes
                 </label>
                 <input
@@ -225,14 +225,14 @@ function SortableRow({
           </div>
           {/* Icon picker */}
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+            <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-2">
               Icon
             </label>
             <IconPicker selected={editIcon} onSelect={setEditIcon} />
           </div>
           {/* Schedule */}
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+            <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
               Days expected
             </label>
             <div className="flex gap-1.5">
@@ -243,7 +243,7 @@ function SortableRow({
                   onClick={() => toggleEditDay(day)}
                   className={`w-8 h-8 rounded-full font-mono text-xs transition-colors ${
                     editScheduledDays.includes(day)
-                      ? "bg-olive text-text"
+                      ? "bg-olive text-bg"
                       : "bg-bg border border-border text-dim"
                   }`}
                 >
@@ -261,7 +261,7 @@ function SortableRow({
             >
               <span className="text-left">
                 <span className="font-body text-sm text-text block">Ask each day instead</span>
-                <span className="font-mono text-[9px] text-dim">
+                <span className="font-mono text-micro text-dim">
                   &ldquo;Do you need to {editName.trim() || item.name} today?&rdquo; — Yes starts it, No counts as rest
                 </span>
               </span>
@@ -281,7 +281,7 @@ function SortableRow({
 
           {/* Threshold */}
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+            <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
               Counts as a win when done
             </label>
             <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ function SortableRow({
             disabled={saving}
             className="flex items-center gap-1.5 bg-olive/15 border border-olive/30 text-olive font-mono text-xs px-4 py-2 rounded-pill disabled:opacity-50"
           >
-            <Check size={12} />
+            <Check size={14} />
             {saving ? "Saving…" : "Save changes"}
           </button>
 
@@ -313,7 +313,7 @@ function SortableRow({
               isn't scoped to groupId), so this is safe at any time. */}
           {otherGroups.length > 0 && (
             <div>
-              <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+              <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
                 Move to
               </label>
               <select
@@ -341,10 +341,10 @@ function SortableRow({
               pointing at this habit. */}
           {item.appIntentLastTriggeredAt && (
             <div className="pt-2 border-t border-border">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-1.5">
+              <p className="font-mono text-caption uppercase tracking-widest text-dim mb-1.5">
                 Siri &amp; Shortcuts
               </p>
-              <p className="font-mono text-[11px] text-olive">
+              <p className="font-mono text-[13px] text-olive">
                 Connected · last used {new Date(item.appIntentLastTriggeredAt).toLocaleDateString()}
               </p>
             </div>
@@ -352,10 +352,10 @@ function SortableRow({
 
           {/* For the external API (see Profile > External API Key) */}
           <div className="pt-2 border-t border-border">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-dim mb-1">
+            <p className="font-mono text-micro uppercase tracking-widest text-dim mb-1">
               Item ID
             </p>
-            <p className="font-mono text-[10px] text-dim break-all select-all">{item._id}</p>
+            <p className="font-mono text-caption text-dim break-all select-all">{item._id}</p>
           </div>
         </div>
       )}
@@ -515,12 +515,12 @@ export default function RoutineEditView({ group, items: initialItems, groups }: 
 
         {/* Schedule */}
         <div className="px-4 py-4 border-b border-border">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+          <p className="font-mono text-caption uppercase tracking-widest text-dim mb-3">
             Time Window
           </p>
           <div className="flex gap-3 mb-3">
             <div className="w-40">
-              <label className="font-mono text-[10px] text-dim block mb-1.5">Start time</label>
+              <label className="font-mono text-caption text-dim block mb-1.5">Start time</label>
               <input
                 type="time"
                 value={startTime}
@@ -530,7 +530,7 @@ export default function RoutineEditView({ group, items: initialItems, groups }: 
             </div>
           </div>
           {startTime && (
-            <p className="font-mono text-[10px] text-dim mb-3">
+            <p className="font-mono text-caption text-dim mb-3">
               Opens at {startTime} · closes after all habits are done
             </p>
           )}
@@ -540,21 +540,21 @@ export default function RoutineEditView({ group, items: initialItems, groups }: 
               disabled={savingSchedule}
               className="flex items-center gap-1.5 bg-olive/15 border border-olive/30 text-olive font-mono text-xs px-4 py-2 rounded-pill disabled:opacity-50"
             >
-              <Check size={12} />
+              <Check size={14} />
               {savingSchedule ? "Saving…" : "Save schedule"}
             </button>
           )}
           {scheduleSaved && (
-            <p className="font-mono text-[10px] text-olive">Schedule saved</p>
+            <p className="font-mono text-caption text-olive">Schedule saved</p>
           )}
         </div>
 
         {/* For the external API (see Profile > External API Key) */}
         <div className="px-4 py-3 border-b border-border">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-1">
+          <p className="font-mono text-caption uppercase tracking-widest text-dim mb-1">
             Group ID
           </p>
-          <p className="font-mono text-[11px] text-muted break-all select-all">{group._id}</p>
+          <p className="font-mono text-[13px] text-muted break-all select-all">{group._id}</p>
         </div>
 
         {/* Sortable list */}

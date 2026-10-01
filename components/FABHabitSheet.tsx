@@ -97,7 +97,7 @@ export default function FABHabitSheet({ date, onClose }: Props) {
                         onClick={() => toggleDone(habit)}
                         disabled={isDone || isLoading}
                         className={`w-full flex items-center gap-4 px-5 py-4 transition-colors text-left ${
-                          isDone ? "opacity-40" : "hover:bg-card-hover active:bg-card-hover"
+                          isDone ? "opacity-60" : "hover:bg-card-hover active:bg-card-hover"
                         }`}
                       >
                         <div className="w-7 flex items-center justify-center flex-shrink-0">

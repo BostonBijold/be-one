@@ -757,7 +757,7 @@ export default function RoutinesView({
             className="w-full text-left bg-card border border-gold/25 rounded-card px-4 py-3 mt-6 mb-4 hover:bg-card-hover active:opacity-90 transition-colors flex items-center gap-3"
           >
             <div className="flex-1 min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-0.5">
+              <p className="font-mono text-micro uppercase tracking-widest text-gold mb-0.5">
                 This Week&apos;s Virtue
               </p>
               <p className="font-heading text-base italic text-text leading-tight truncate">
@@ -828,7 +828,7 @@ export default function RoutinesView({
             {(habitGroups.length > 0) && (
               <div className="mt-10">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-dim">
+                  <span className="font-mono text-caption uppercase tracking-widest text-dim">
                     Habits
                   </span>
                   <div className="flex-1 h-px bg-border" />
@@ -837,7 +837,7 @@ export default function RoutinesView({
                       const target = habitGroups[0];
                       if (target) setAddHabitGroup({ id: target._id, name: target.name });
                     }}
-                    className="font-mono text-[10px] text-olive hover:text-olive-light transition-colors"
+                    className="font-mono text-caption text-olive hover:text-olive-light transition-colors"
                   >
                     + Add
                   </button>

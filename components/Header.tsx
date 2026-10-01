@@ -42,7 +42,7 @@ export default function Header({ userName, today, skipAuth }: Props) {
           <h1 className="font-heading text-xl tracking-wide text-text leading-tight">
             Be One
           </h1>
-          <p className="font-mono text-dim text-[10px] mt-0.5 tracking-widest uppercase">
+          <p className="font-mono text-dim text-caption mt-0.5 tracking-widest uppercase">
             {dayName}, {monthName} {dayNum}
           </p>
         </div>

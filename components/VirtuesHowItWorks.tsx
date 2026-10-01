@@ -29,7 +29,7 @@ export default function VirtuesHowItWorks({ autoOpen, iconOnly = false }: Props)
       >
         <Info size={iconOnly ? 16 : 14} />
         {!iconOnly && (
-          <span className="font-mono text-[10px] uppercase tracking-widest">
+          <span className="font-mono text-caption uppercase tracking-widest">
             How This Works
           </span>
         )}

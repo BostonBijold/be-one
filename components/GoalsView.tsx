@@ -66,7 +66,7 @@ function dueDateLabel(targetDate: string | null, today: string): { text: string;
 }
 
 const STATUS_STYLE: Record<string, { border: string; badge: string; label: string }> = {
-  active:    { border: "border-blue-muted",    badge: "text-blue-muted bg-blue-muted/10",    label: "Active"    },
+  active:    { border: "border-blue-light",    badge: "text-blue-light bg-blue-muted/10",    label: "Active"    },
   complete:  { border: "border-olive",         badge: "text-olive bg-olive/10",              label: "Complete"  },
   paused:    { border: "border-amber",         badge: "text-amber bg-amber/10",              label: "Paused"    },
   abandoned: { border: "border-border-light",  badge: "text-dim bg-card",                   label: "Abandoned" },
@@ -81,8 +81,8 @@ function addDays(dateStr: string, days: number) {
 function progressBarColor(status: string): string {
   if (status === "complete") return "#5a6b35";
   if (status === "paused")   return "#c47a2a";
-  if (status === "abandoned") return "#5a5548";
-  return "#4a7a9a"; // blue-muted for active
+  if (status === "abandoned") return "#8e8673";
+  return "#6390b0"; // blue-muted for active
 }
 
 // ── Goal Card ─────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ function GoalCard({ goal, today, onClick }: { goal: SerializedGoal; today: strin
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-heading text-base text-text leading-tight flex-1">{goal.name}</h3>
           <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-            <span className={`font-mono text-[10px] px-2 py-0.5 rounded-pill ${style.badge}`}>
+            <span className={`font-mono text-caption px-2 py-0.5 rounded-pill ${style.badge}`}>
               {style.label}
             </span>
           </div>
@@ -119,9 +119,9 @@ function GoalCard({ goal, today, onClick }: { goal: SerializedGoal; today: strin
 
         {/* Footer row */}
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-dim">{summary}</span>
+          <span className="font-mono text-caption text-dim">{summary}</span>
           {due && (
-            <span className={`font-mono text-[10px] ${due.color} ml-auto`}>{due.text}</span>
+            <span className={`font-mono text-caption ${due.color} ml-auto`}>{due.text}</span>
           )}
         </div>
       </div>
@@ -197,7 +197,7 @@ function AddGoalSheet({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+            <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
               Goal *
             </label>
             <input
@@ -206,13 +206,13 @@ function AddGoalSheet({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Lose 20 lbs, Build the app, Write a book…"
-              className="w-full bg-bg border border-border rounded-card px-3 py-3 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-muted"
+              className="w-full bg-bg border border-border rounded-card px-3 py-3 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-light"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+            <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
               Description
             </label>
             <textarea
@@ -220,20 +220,20 @@ function AddGoalSheet({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Why this goal matters…"
               rows={2}
-              className="w-full bg-bg border border-border rounded-card px-3 py-3 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-muted resize-none"
+              className="w-full bg-bg border border-border rounded-card px-3 py-3 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-light resize-none"
             />
           </div>
 
           {/* Target date */}
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5">
+            <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5">
               Target Date
             </label>
             <input
               type="date"
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
-              className="w-full bg-bg border border-border rounded-card px-3 py-3 font-mono text-sm text-text focus:outline-none focus:border-blue-muted"
+              className="w-full bg-bg border border-border rounded-card px-3 py-3 font-mono text-sm text-text focus:outline-none focus:border-blue-light"
             />
           </div>
 
@@ -263,7 +263,7 @@ function AddGoalSheet({
                   value={outcomeLabel}
                   onChange={(e) => setOutcomeLabel(e.target.value)}
                   placeholder="Label (e.g. Weight)"
-                  className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-muted"
+                  className="w-full bg-bg border border-border rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-light"
                 />
                 <div className="flex gap-3">
                   <input
@@ -271,14 +271,14 @@ function AddGoalSheet({
                     value={outcomeTarget}
                     onChange={(e) => setOutcomeTarget(e.target.value)}
                     placeholder="Target (e.g. 160)"
-                    className="flex-1 bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-muted"
+                    className="flex-1 bg-bg border border-border rounded-card px-3 py-2.5 font-mono text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-light"
                   />
                   <input
                     type="text"
                     value={outcomeUnit}
                     onChange={(e) => setOutcomeUnit(e.target.value)}
                     placeholder="Unit (e.g. lbs)"
-                    className="flex-1 bg-bg border border-border rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-muted"
+                    className="flex-1 bg-bg border border-border rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-light"
                   />
                 </div>
               </div>
@@ -358,7 +358,7 @@ export default function GoalsView({ userName, today, skipAuth }: Props) {
             onClick={() => setAdding(true)}
             className="flex items-center gap-1.5 bg-blue-muted text-text font-body text-sm font-medium px-3.5 py-2 rounded-pill min-h-[36px] active:opacity-90 transition-opacity"
           >
-            <Plus size={14} />
+            <Plus size={16} />
             New Goal
           </button>
         </div>
@@ -393,7 +393,7 @@ export default function GoalsView({ userName, today, skipAuth }: Props) {
             {/* Active goals */}
             {activeGoals.length > 0 && (
               <section className="mb-6">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+                <p className="font-mono text-caption uppercase tracking-widest text-dim mb-3">
                   Active
                 </p>
                 <div className="space-y-2">
@@ -412,7 +412,7 @@ export default function GoalsView({ userName, today, skipAuth }: Props) {
             {/* Other goals (paused / complete / abandoned) */}
             {otherGoals.length > 0 && (
               <section>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+                <p className="font-mono text-caption uppercase tracking-widest text-dim mb-3">
                   Other
                 </p>
                 <div className="space-y-2">

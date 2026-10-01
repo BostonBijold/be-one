@@ -141,10 +141,10 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
                 </button>
               ) : null}
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">
+                <p className="font-mono text-micro uppercase tracking-widest text-gold mb-1">
                   Weekly Review
                 </p>
-                <p className="font-mono text-[10px] text-dim">
+                <p className="font-mono text-caption text-dim">
                   {loading ? "…" : `${checkInDays}/7 days checked in`}
                 </p>
               </div>
@@ -183,7 +183,7 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
                 ) : scores.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="font-body text-sm text-muted">No check-ins recorded this week.</p>
-                    <p className="font-mono text-[10px] text-dim mt-1.5">A fresh week starts Monday.</p>
+                    <p className="font-mono text-caption text-dim mt-1.5">A fresh week starts Monday.</p>
                   </div>
                 ) : (
                   <>
@@ -191,14 +191,14 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
                     {strongest && needsWork && strongest.virtueId !== needsWork.virtueId && (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-olive/10 border border-olive/30 rounded-card px-3 py-3">
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-olive mb-1">
+                          <p className="font-mono text-micro uppercase tracking-widest text-olive mb-1">
                             Strongest
                           </p>
                           <p className="font-body text-sm text-text font-medium">{strongest.virtueName}</p>
                           <p className="font-mono text-lg text-olive font-bold mt-1">{strongest.pct}%</p>
                         </div>
                         <div className="bg-tobacco/10 border border-tobacco/30 rounded-card px-3 py-3">
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-tobacco mb-1">
+                          <p className="font-mono text-micro uppercase tracking-widest text-tobacco mb-1">
                             Needs Work
                           </p>
                           <p className="font-body text-sm text-text font-medium">{needsWork.virtueName}</p>
@@ -209,7 +209,7 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
 
                     {/* Virtue score table */}
                     <div>
-                      <p className="font-mono text-[9px] uppercase tracking-widest text-dim mb-2">
+                      <p className="font-mono text-micro uppercase tracking-widest text-dim mb-2">
                         All Virtues
                       </p>
                       <div className="bg-bg rounded-card divide-y divide-border overflow-hidden">
@@ -222,7 +222,7 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
                                 style={{ width: `${s.pct}%` }}
                               />
                             </div>
-                            <span className="font-mono text-[10px] text-muted w-10 text-right flex-shrink-0">
+                            <span className="font-mono text-caption text-muted w-10 text-right flex-shrink-0">
                               {s.yes}/{s.total}
                             </span>
                           </div>
@@ -255,7 +255,7 @@ export default function WeeklyReviewModal({ date, currentVirtue, virtueCount, on
             <button
               onClick={advance}
               className={`w-full py-4 rounded-card font-body font-semibold text-sm min-h-[44px] ${
-                step === "next" ? "bg-olive text-text" : "bg-gold text-bg"
+                step === "next" ? "bg-olive text-bg" : "bg-gold text-bg"
               }`}
             >
               {primaryLabel}

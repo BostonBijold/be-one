@@ -81,11 +81,11 @@ function dayLabel(dateStr: string): string {
 }
 
 function barColor(pct: number, hasLogs: boolean): string {
-  if (!hasLogs) return "#2e2c22";
+  if (!hasLogs) return "#38352a";
   if (pct >= 1)    return "#c4a84a"; // gold — perfect day
   if (pct >= 0.75) return "#7a9248"; // new olive
   if (pct >= 0.5)  return "#c47a2a";
-  if (pct > 0)     return "#8b5a2b";
+  if (pct > 0)     return "#b57e4b";
   return "#7a2e2e";
 }
 
@@ -110,18 +110,18 @@ function daySegmentStyle(day: DayBreakdown): { background: string; border?: stri
     return { background: day.timing === "amber" ? "#c47a2a" : "#5a6b35" };
   }
   switch (day.state) {
-    case "rest": return { background: "#4a7a9a" };
-    case "missed": return { background: "transparent", border: "1px solid #a03a3a" };
-    case "unlogged": return { background: "transparent", border: "1px solid #5a5548" };
-    case "pending": return { background: "transparent", border: "1px dashed #5a5548" };
-    case "not_scheduled": return { background: "#2e2c2233" };
+    case "rest": return { background: "#6390b0" };
+    case "missed": return { background: "transparent", border: "1px solid #cf6a5f" };
+    case "unlogged": return { background: "transparent", border: "1px solid #8e8673" };
+    case "pending": return { background: "transparent", border: "1px dashed #8e8673" };
+    case "not_scheduled": return { background: "#38352a33" };
   }
 }
 
 const PACING: Record<WeeklyProgress["pacing"], { color: string; label: string }> = {
   green: { color: "#7a9248", label: "on track" },
   amber: { color: "#c47a2a", label: "in reach" },
-  red: { color: "#a03a3a", label: "will miss" },
+  red: { color: "#cf6a5f", label: "will miss" },
 };
 
 // ── Bar chart ─────────────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ function RoutineChart({
             </div>
             {showLabels && (
               <div className="flex flex-col items-center gap-0.5">
-                <span className={`font-mono text-[9px] ${isToday ? "text-gold font-semibold" : "text-dim"}`}>
+                <span className={`font-mono text-micro ${isToday ? "text-gold font-semibold" : "text-dim"}`}>
                   {dayLabel(d.date)}
                 </span>
                 {isToday && <span className="w-[3px] h-[3px] rounded-full bg-gold" />}
@@ -217,14 +217,14 @@ function HabitRow({ habit }: { habit: HabitStats }) {
     <div className="py-3.5 border-b border-border last:border-0">
       <div className="flex items-center gap-2.5 mb-2">
         <div className="w-5 flex items-center justify-center flex-shrink-0">
-          <HabitIcon name={habit.icon} size={14} strokeWidth={1.75} className="text-muted" />
+          <HabitIcon name={habit.icon} size={16} strokeWidth={1.75} className="text-muted" />
         </div>
         <span className="flex-1 font-body text-sm text-text leading-tight">{habit.name}</span>
         {!isCheckbox && !isStopwatch && (
-          <span className="font-mono text-[10px] text-dim flex-shrink-0">{habit.projectedMinutes}m proj</span>
+          <span className="font-mono text-caption text-dim flex-shrink-0">{habit.projectedMinutes}m proj</span>
         )}
         {isStopwatch && habit.avgActualMins !== null && (
-          <span className="font-mono text-[10px] text-muted flex-shrink-0">{habit.avgActualMins}m avg</span>
+          <span className="font-mono text-caption text-muted flex-shrink-0">{habit.avgActualMins}m avg</span>
         )}
       </div>
 
@@ -234,7 +234,7 @@ function HabitRow({ habit }: { habit: HabitStats }) {
           <span className="font-mono text-xs text-amber">{weekOvertimeCount} overtime</span>
         )}
         {weekRestCount > 0 && (
-          <span className="font-mono text-xs text-blue-muted">{weekRestCount} rest</span>
+          <span className="font-mono text-xs text-blue-light">{weekRestCount} rest</span>
         )}
         {weekMissedCount > 0 && (
           <span className="font-mono text-xs text-burgundy-light">{weekMissedCount} missed</span>
@@ -266,20 +266,20 @@ function HabitRow({ habit }: { habit: HabitStats }) {
                   style={{ backgroundColor: background, border }}
                 >
                   {d.state === "missed" && (
-                    <span className="font-mono text-[7px] text-burgundy-light">✕</span>
+                    <span className="font-mono text-micro text-burgundy-light">✕</span>
                   )}
                 </div>
               );
             })}
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-medium" style={{ color: PACING[wp.pacing].color }}>
+            <span className="font-mono text-caption font-medium" style={{ color: PACING[wp.pacing].color }}>
               {PACING[wp.pacing].label}
             </span>
-            <span className="font-mono text-[9px] text-dim ml-auto">
+            <span className="font-mono text-micro text-dim ml-auto">
               {wp.successCount} of {wp.successThreshold}
             </span>
-            <span className="font-mono text-[10px] font-medium" style={{ color: PACING[wp.pacing].color }}>
+            <span className="font-mono text-caption font-medium" style={{ color: PACING[wp.pacing].color }}>
               {Math.round(wp.percentage)}%
             </span>
           </div>
@@ -297,11 +297,11 @@ function HabitRow({ habit }: { habit: HabitStats }) {
                 }}
               />
             </div>
-            <span className="font-mono text-[10px] w-8 text-right flex-shrink-0" style={{ color: completionBarColor(pct) }}>
+            <span className="font-mono text-caption w-8 text-right flex-shrink-0" style={{ color: completionBarColor(pct) }}>
               {habit.engagedDays > 0 ? `${pctDisplay}%` : "—"}
             </span>
           </div>
-          <p className="font-mono text-[9px] text-dim mt-1">
+          <p className="font-mono text-micro text-dim mt-1">
             {habit.engagedDays} of {habit.totalDays} days logged
           </p>
         </div>
@@ -349,14 +349,14 @@ export default function AnalyticsContent() {
         <div>
           <h2 className="font-heading text-xl text-text">Analytics</h2>
           {dateRangeLabel && (
-            <p className="font-mono text-dim text-[10px] mt-0.5 tracking-wide">{dateRangeLabel}</p>
+            <p className="font-mono text-dim text-caption mt-0.5 tracking-wide">{dateRangeLabel}</p>
           )}
         </div>
         <div className="flex bg-card border border-border rounded-pill p-0.5">
           <button
             onClick={() => setDays(7)}
             className={`font-mono text-xs px-3 py-1.5 rounded-pill transition-colors ${
-              days === 7 ? "bg-olive text-text" : "text-dim hover:text-muted"
+              days === 7 ? "bg-olive text-bg" : "text-dim hover:text-muted"
             }`}
           >
             7d
@@ -364,7 +364,7 @@ export default function AnalyticsContent() {
           <button
             onClick={() => setDays(30)}
             className={`font-mono text-xs px-3 py-1.5 rounded-pill transition-colors ${
-              days === 30 ? "bg-olive text-text" : "text-dim hover:text-muted"
+              days === 30 ? "bg-olive text-bg" : "text-dim hover:text-muted"
             }`}
           >
             30d
@@ -384,7 +384,7 @@ export default function AnalyticsContent() {
         <>
           {/* Routine Performance */}
           <section className="mb-10">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+            <p className="font-mono text-caption uppercase tracking-widest text-dim mb-3">
               Routine Performance
             </p>
             <div className="space-y-3">
@@ -400,7 +400,7 @@ export default function AnalyticsContent() {
                       <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                         <button
                           onClick={() => router.push(`/routines/review?groupId=${group._id}&entryPoint=analytics_button&return=analytics`)}
-                          className="font-mono text-[10px] text-gold border border-gold/30 rounded-pill px-2.5 py-1 hover:bg-gold/10 transition-colors"
+                          className="font-mono text-caption text-gold border border-gold/30 rounded-pill px-2.5 py-1 hover:bg-gold/10 transition-colors"
                         >
                           Review
                         </button>
@@ -414,7 +414,7 @@ export default function AnalyticsContent() {
                     </div>
 
                     {group.avgStartMinutesUtc !== null && group.startTimeSampleSize >= 2 && (
-                      <p className="font-mono text-[10px] text-dim mb-2">
+                      <p className="font-mono text-caption text-dim mb-2">
                         Usually starts{" "}
                         <span className="text-muted">
                           ~{utcMinsToLocalTime(group.avgStartMinutesUtc)}
@@ -437,8 +437,8 @@ export default function AnalyticsContent() {
                           </span>
                           {variance !== 0 && (
                             <span
-                              className="font-mono text-[10px] ml-auto font-medium"
-                              style={{ color: variance > 0 ? "#8b5a2b" : "#c4a84a" }}
+                              className="font-mono text-caption ml-auto font-medium"
+                              style={{ color: variance > 0 ? "#b57e4b" : "#c4a84a" }}
                             >
                               {variance > 0 ? `+${fmtMins(variance)}` : `-${fmtMins(Math.abs(variance))}`}
                             </span>
@@ -457,7 +457,7 @@ export default function AnalyticsContent() {
                     />
 
                     {days === 30 && (
-                      <p className="font-mono text-[9px] text-dim mt-1.5">
+                      <p className="font-mono text-micro text-dim mt-1.5">
                         {dateRangeLabel} · active {activeDays} of {days} days
                       </p>
                     )}
@@ -469,12 +469,12 @@ export default function AnalyticsContent() {
 
           {/* Habit Breakdown */}
           <section>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+            <p className="font-mono text-caption uppercase tracking-widest text-dim mb-3">
               Habit Breakdown
             </p>
             {habitsByGroup.filter(({ habits }) => habits.length > 0).map(({ group, habits }) => (
               <div key={group._id} className="mb-6">
-                <p className="font-mono text-[10px] text-muted uppercase tracking-widest mb-2">
+                <p className="font-mono text-caption text-muted uppercase tracking-widest mb-2">
                   {group.name}
                 </p>
                 <div className="bg-card rounded-card px-4">

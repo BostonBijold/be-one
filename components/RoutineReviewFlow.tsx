@@ -177,14 +177,14 @@ function ItemRow({
       <div className="flex-1 min-w-0">
         <p className="font-body text-sm text-text truncate">{item.name}</p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="font-mono text-[10px] text-muted">
+          <span className="font-mono text-caption text-muted">
             {item.avgActualMins !== null ? `avg ${item.avgActualMins}m` : "no avg yet"}
           </span>
-          {edited && <span className="font-mono text-[10px] text-dim">was {item.projectedMinutes}m</span>}
+          {edited && <span className="font-mono text-caption text-dim">was {item.projectedMinutes}m</span>}
           {showUseAvg && (
             <button
               onClick={() => onChange(String(item.avgActualMins))}
-              className="font-mono text-[10px] text-gold border border-gold/40 rounded-pill px-2 py-0.5"
+              className="font-mono text-caption text-gold border border-gold/40 rounded-pill px-2 py-0.5"
             >
               Use avg
             </button>
@@ -203,7 +203,7 @@ function ItemRow({
           proposed !== savedMinutes ? "border-gold/60" : "border-border"
         }`}
       />
-      <span className="font-mono text-[10px] text-dim flex-shrink-0">min</span>
+      <span className="font-mono text-caption text-dim flex-shrink-0">min</span>
     </div>
   );
 }
@@ -463,7 +463,7 @@ export default function RoutineReviewFlow({
   const proposedTimeline = computeReviewTimeline(orderedItems.map((i) => ({ id: i._id, minutes: proposedMinutes(i._id) })));
 
   const toSegments = (t: typeof goalTimeline) =>
-    t.segments.map((s) => ({ id: s.id, pct: s.pct, color: colors[s.id] ?? "#3d3b2e", label: itemsById[s.id]?.name }));
+    t.segments.map((s) => ({ id: s.id, pct: s.pct, color: colors[s.id] ?? "#4d4a3c", label: itemsById[s.id]?.name }));
 
   const originalStart = reviewData?.group.startTime ?? null;
   const goalEnd = staticBaselineFinish(date, originalStart, goalTimeline.totalMinutes);
@@ -494,7 +494,7 @@ export default function RoutineReviewFlow({
             </button>
           )}
           <div className="flex-1 min-w-0">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-0.5">Routine Review</p>
+            <p className="font-mono text-micro uppercase tracking-widest text-gold mb-0.5">Routine Review</p>
             <h1 className="font-heading text-lg text-text truncate">
               {screen === "review" ? reviewData?.group.name ?? "Loading…" : "Choose a routine"}
             </h1>
@@ -516,7 +516,7 @@ export default function RoutineReviewFlow({
               <button
                 onClick={() => resolveLeave(true)}
                 disabled={saving || finishing}
-                className="flex-1 bg-olive text-text py-2.5 rounded-lg font-body text-sm min-h-[44px] disabled:opacity-50"
+                className="flex-1 bg-olive text-bg py-2.5 rounded-lg font-body text-sm min-h-[44px] disabled:opacity-50"
               >
                 {saving || finishing ? "Saving…" : pendingLeave === "exit" ? "Save & exit" : "Save"}
               </button>
@@ -541,7 +541,7 @@ export default function RoutineReviewFlow({
         {/* Group picker — only when no groupId was passed in */}
         {screen === "pick" && (
           <div className="px-4 pt-5 pb-10 space-y-2">
-            <p className="font-mono text-[10px] text-dim mb-2">Which routine do you want to review?</p>
+            <p className="font-mono text-caption text-dim mb-2">Which routine do you want to review?</p>
             {groupOptions.length === 0 && (
               <p className="font-mono text-xs text-dim py-8 text-center">No timed routines to review yet.</p>
             )}
@@ -556,7 +556,7 @@ export default function RoutineReviewFlow({
                   <span className="font-body text-sm text-text">{g.name}</span>
                   <span className="flex items-center gap-2">
                     {visited.includes(g._id) && (
-                      <span className={`font-mono text-[10px] rounded-pill px-2 py-0.5 border ${changed ? "text-olive-light border-olive/40" : "text-dim border-border"}`}>
+                      <span className={`font-mono text-caption rounded-pill px-2 py-0.5 border ${changed ? "text-olive-light border-olive/40" : "text-dim border-border"}`}>
                         {changed ? "Updated" : "Reviewed"}
                       </span>
                     )}
@@ -569,7 +569,7 @@ export default function RoutineReviewFlow({
               <button
                 onClick={() => finish({ commit: false })}
                 disabled={finishing}
-                className="w-full mt-4 bg-olive text-text py-3.5 rounded-card font-body text-sm font-medium min-h-[44px] disabled:opacity-50"
+                className="w-full mt-4 bg-olive text-bg py-3.5 rounded-card font-body text-sm font-medium min-h-[44px] disabled:opacity-50"
               >
                 {finishing ? "Finishing…" : "Finish review"}
               </button>
@@ -606,7 +606,7 @@ export default function RoutineReviewFlow({
                   endLabel={avgEndLabel}
                 />
               ) : (
-                <p className="font-mono text-[10px] text-dim">Actual avg: not enough logged days yet.</p>
+                <p className="font-mono text-caption text-dim">Actual avg: not enough logged days yet.</p>
               )}
               <TimelineBar
                 size="lg"
@@ -620,7 +620,7 @@ export default function RoutineReviewFlow({
 
             <div className="px-4 pt-4 pb-32 space-y-5">
               <div>
-                <p className="font-mono text-[10px] text-dim mb-2">
+                <p className="font-mono text-caption text-dim mb-2">
                   Edit a goal or tap Use avg — the Proposed bar updates as you go. Drag ⋮⋮ to reorder.
                 </p>
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -630,7 +630,7 @@ export default function RoutineReviewFlow({
                         <ItemRow
                           key={item._id}
                           item={item}
-                          color={colors[item._id] ?? "#3d3b2e"}
+                          color={colors[item._id] ?? "#4d4a3c"}
                           value={draftGoals[item._id] ?? ""}
                           savedMinutes={savedState!.goals[item._id]}
                           onChange={(v) => {
@@ -651,7 +651,7 @@ export default function RoutineReviewFlow({
               </div>
 
               <div>
-                <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-1.5" htmlFor="review-start">
+                <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-1.5" htmlFor="review-start">
                   Start time
                 </label>
                 <div className="flex items-center gap-3">
@@ -664,7 +664,7 @@ export default function RoutineReviewFlow({
                       startDirty ? "border-gold/60" : "border-border"
                     }`}
                   />
-                  <div className="font-mono text-[10px] text-dim leading-relaxed">
+                  <div className="font-mono text-caption text-dim leading-relaxed">
                     {proposedEnd && (
                       <p>Projected finish <span className="text-text">{fmtDateLabel(proposedEnd)}</span></p>
                     )}
@@ -681,7 +681,7 @@ export default function RoutineReviewFlow({
             >
               <div className="mx-auto max-w-mobile px-4 py-3">
                 {saveError && (
-                  <p className="font-mono text-[10px] text-burgundy-light mb-2">Couldn&apos;t save — try again.</p>
+                  <p className="font-mono text-caption text-burgundy-light mb-2">Couldn&apos;t save — try again.</p>
                 )}
                 <div className="flex gap-2">
                   <button
@@ -689,12 +689,12 @@ export default function RoutineReviewFlow({
                     disabled={!dirty || saving || finishing}
                     className="flex-1 flex items-center justify-center gap-1.5 border border-olive/40 text-olive-light py-3 rounded-card font-body text-sm min-h-[44px] disabled:opacity-40"
                   >
-                    {saving ? "Saving…" : justSaved && !dirty ? (<><Check size={14} /> Saved</>) : "Save changes"}
+                    {saving ? "Saving…" : justSaved && !dirty ? (<><Check size={16} /> Saved</>) : "Save changes"}
                   </button>
                   <button
                     onClick={() => finish({ commit: true })}
                     disabled={saving || finishing}
-                    className="flex-1 bg-olive text-text py-3 rounded-card font-body text-sm font-medium min-h-[44px] disabled:opacity-50"
+                    className="flex-1 bg-olive text-bg py-3 rounded-card font-body text-sm font-medium min-h-[44px] disabled:opacity-50"
                   >
                     {finishing ? "Finishing…" : "Finish review"}
                   </button>
@@ -702,7 +702,7 @@ export default function RoutineReviewFlow({
                 {canPickAnother && justSaved && !dirty && (
                   <button
                     onClick={() => setScreen("pick")}
-                    className="w-full mt-1 font-mono text-[11px] text-gold min-h-[36px]"
+                    className="w-full mt-1 font-mono text-[13px] text-gold min-h-[36px]"
                   >
                     Review another routine ›
                   </button>

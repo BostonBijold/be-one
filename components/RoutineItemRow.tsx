@@ -73,7 +73,7 @@ const BADGE: Record<LogState, string> = {
   paused:      "text-amber bg-amber/10",
   done:        "text-olive bg-olive/10",
   missed:      "text-burgundy-light bg-burgundy/10",
-  rest:        "text-blue-muted bg-blue-muted/10",
+  rest:        "text-blue-light bg-blue-muted/10",
   not_applicable: "text-dim bg-dim/10",
 };
 
@@ -134,13 +134,13 @@ export default function RoutineItemRow({
   // Time editing form — shown instead of the normal action panel when active
   const timeEditPanel = (
     <div className="space-y-3">
-      <p className="font-mono text-[10px] text-dim uppercase tracking-widest">
+      <p className="font-mono text-caption text-dim uppercase tracking-widest">
         {state === "done" ? "Edit Time" : "Log Time"}
       </p>
 
       <div className="flex gap-2">
         <div className="flex-1">
-          <p className="font-mono text-[9px] text-dim mb-1.5">Started</p>
+          <p className="font-mono text-micro text-dim mb-1.5">Started</p>
           <input
             type="time"
             value={startTime}
@@ -149,7 +149,7 @@ export default function RoutineItemRow({
           />
         </div>
         <div className="flex-1">
-          <p className="font-mono text-[9px] text-dim mb-1.5">Finished</p>
+          <p className="font-mono text-micro text-dim mb-1.5">Finished</p>
           <input
             type="time"
             value={endTime}
@@ -168,7 +168,7 @@ export default function RoutineItemRow({
         ) : startTime && endTime ? (
           <span className="font-mono text-xs text-burgundy-light">End must be after start</span>
         ) : (
-          <span className="font-mono text-[10px] text-dim">enter start and end time</span>
+          <span className="font-mono text-caption text-dim">enter start and end time</span>
         )}
       </div>
 
@@ -182,7 +182,7 @@ export default function RoutineItemRow({
         <button
           onClick={handleSaveTime}
           disabled={calcedMins === null}
-          className="flex-1 bg-olive text-text py-2.5 rounded-card text-sm font-body font-medium min-h-[44px] disabled:opacity-30 transition-opacity"
+          className="flex-1 bg-olive text-bg py-2.5 rounded-card text-sm font-body font-medium min-h-[44px] disabled:opacity-30 transition-opacity"
         >
           {calcedMins !== null ? `Save · ${fmtMins(calcedMins)}` : "Save"}
         </button>
@@ -200,7 +200,7 @@ export default function RoutineItemRow({
         }`}
       >
         <div className="w-7 flex items-center justify-center flex-shrink-0">
-          <HabitIcon name={item.icon} size={18} className="text-muted" />
+          <HabitIcon name={item.icon} size={20} className="text-muted" />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -251,7 +251,7 @@ export default function RoutineItemRow({
           ) : (
             <span className="font-mono text-dim text-xs">{fmtMins(item.projectedMinutes)}</span>
           )}
-          <span className="text-dim text-[10px] ml-1">{isExpanded ? "▾" : "▸"}</span>
+          <span className="text-dim text-caption ml-1">{isExpanded ? "▾" : "▸"}</span>
         </div>
       </button>
 
@@ -414,7 +414,7 @@ export default function RoutineItemRow({
                     </button>
                     <button
                       onClick={() => onStateChange("rest", { isBackEntry })}
-                      className="flex-1 border border-blue-muted/40 hover:border-blue-muted text-blue-muted py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
+                      className="flex-1 border border-blue-muted/40 hover:border-blue-light text-blue-light py-2.5 rounded-card text-sm font-body transition-colors min-h-[44px]"
                     >
                       ~ Rest
                     </button>
@@ -432,7 +432,7 @@ export default function RoutineItemRow({
                   onClick={openTimeEdit}
                   className="w-full flex items-center justify-between bg-card-hover hover:bg-border/40 border border-border-light text-text py-3 px-4 rounded-card transition-colors min-h-[44px]"
                 >
-                  <span className="font-body text-sm font-medium flex items-center gap-1.5"><Pencil size={13} strokeWidth={1.75} />Edit time</span>
+                  <span className="font-body text-sm font-medium flex items-center gap-1.5"><Pencil size={15} strokeWidth={1.75} />Edit time</span>
                   {log?.actualMinutes != null && (
                     <span className="font-mono text-dim text-xs">{fmtMins(log.actualMinutes)} logged</span>
                   )}
@@ -488,7 +488,7 @@ export default function RoutineItemRow({
                 {state !== "rest" && (
                   <button
                     onClick={() => onStateChange("rest", { isBackEntry })}
-                    className="flex-1 border border-blue-muted/40 text-blue-muted py-2.5 rounded-card text-sm font-body min-h-[44px]"
+                    className="flex-1 border border-blue-muted/40 text-blue-light py-2.5 rounded-card text-sm font-body min-h-[44px]"
                   >
                     ~ Rest
                   </button>

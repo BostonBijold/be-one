@@ -86,7 +86,7 @@ export default function VirtueSheet({ virtue, isAdmin, onClose, onEssayChange }:
         <div className="overflow-y-auto px-5 pb-10 flex-1">
           {/* Virtue name */}
           <div className="mb-1">
-            <span className="font-mono text-[10px] text-gold uppercase tracking-widest">
+            <span className="font-mono text-caption text-gold uppercase tracking-widest">
               Week {virtue.order} of {virtue.virtueCount}
             </span>
           </div>
@@ -99,7 +99,7 @@ export default function VirtueSheet({ virtue, isAdmin, onClose, onEssayChange }:
 
           {/* Reflection */}
           <div className="flex items-center justify-between mb-3">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-dim">
+            <p className="font-mono text-caption uppercase tracking-widest text-dim">
               Reflection
             </p>
             {isAdmin && !editing && (
@@ -107,7 +107,7 @@ export default function VirtueSheet({ virtue, isAdmin, onClose, onEssayChange }:
                 onClick={() => setEditing(true)}
                 className="text-dim hover:text-muted min-w-[32px] min-h-[32px] flex items-center justify-center"
               >
-                <Pencil size={13} />
+                <Pencil size={15} />
               </button>
             )}
           </div>
@@ -127,13 +127,13 @@ export default function VirtueSheet({ virtue, isAdmin, onClose, onEssayChange }:
                   disabled={saving}
                   className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-4 py-2 rounded-pill min-h-[36px] disabled:opacity-50"
                 >
-                  <Check size={11} /> {saving ? "Saving…" : "Save"}
+                  <Check size={13} /> {saving ? "Saving…" : "Save"}
                 </button>
                 <button
                   onClick={cancel}
                   className="flex items-center gap-1.5 text-dim font-mono text-xs px-3 py-2 rounded-pill border border-border min-h-[36px]"
                 >
-                  <X size={11} /> Cancel
+                  <X size={13} /> Cancel
                 </button>
               </div>
             </div>

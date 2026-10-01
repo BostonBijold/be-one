@@ -57,7 +57,7 @@ interface Props {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-  { value: "active",    label: "Active",    color: "text-blue-muted",    bg: "bg-blue-muted/10 border-blue-muted/30"    },
+  { value: "active",    label: "Active",    color: "text-blue-light",    bg: "bg-blue-muted/10 border-blue-muted/30"    },
   { value: "paused",    label: "Paused",    color: "text-amber",         bg: "bg-amber/10 border-amber/30"              },
   { value: "complete",  label: "Complete",  color: "text-olive",         bg: "bg-olive/10 border-olive/30"              },
   { value: "abandoned", label: "Abandoned", color: "text-dim",           bg: "bg-card border-border"                    },
@@ -66,8 +66,8 @@ const STATUS_OPTIONS = [
 function progressBarColor(status: string) {
   if (status === "complete")  return "#5a6b35";
   if (status === "paused")    return "#c47a2a";
-  if (status === "abandoned") return "#5a5548";
-  return "#4a7a9a";
+  if (status === "abandoned") return "#8e8673";
+  return "#6390b0";
 }
 
 function fmtDate(dateStr: string | null): string {
@@ -126,7 +126,7 @@ function AddTaskForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Task name…"
-        className="w-full bg-bg border border-border-light rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-muted"
+        className="w-full bg-bg border border-border-light rounded-card px-3 py-2.5 font-body text-sm text-text placeholder:text-dim focus:outline-none focus:border-blue-light"
         onKeyDown={(e) => e.key === "Escape" && onCancel()}
       />
       {showDate && (
@@ -135,7 +135,7 @@ function AddTaskForm({
           value={scheduleDate}
           onChange={(e) => setScheduleDate(e.target.value)}
           min={today}
-          className="mt-2 w-full bg-bg border border-border rounded-card px-3 py-2 font-mono text-sm text-text focus:outline-none focus:border-blue-muted"
+          className="mt-2 w-full bg-bg border border-border rounded-card px-3 py-2 font-mono text-sm text-text focus:outline-none focus:border-blue-light"
         />
       )}
       <div className="flex items-center gap-2 mt-2">
@@ -149,14 +149,14 @@ function AddTaskForm({
         <button
           type="button"
           onClick={() => setShowDate((v) => !v)}
-          className="font-mono text-[10px] text-dim px-2 py-1.5 rounded-pill border border-border min-h-[32px]"
+          className="font-mono text-caption text-dim px-2 py-1.5 rounded-pill border border-border min-h-[32px]"
         >
           {showDate ? "No date" : "+ Schedule"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="font-mono text-[10px] text-dim ml-auto"
+          className="font-mono text-caption text-dim ml-auto"
         >
           Cancel
         </button>
@@ -218,10 +218,10 @@ function TaskRow({
         className={`mt-0.5 w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
           task.done
             ? "bg-olive border-olive"
-            : "border-border-light bg-transparent hover:border-blue-muted"
+            : "border-border-light bg-transparent hover:border-blue-light"
         }`}
       >
-        {task.done && <Check size={11} className="text-text" strokeWidth={3} />}
+        {task.done && <Check size={13} className="text-bg" strokeWidth={3} />}
       </button>
 
       {/* Name + meta */}
@@ -235,7 +235,7 @@ function TaskRow({
         </span>
         {task.scheduledDate && (
           <div className="mt-0.5">
-            <span className="font-mono text-[9px] text-blue-muted">
+            <span className="font-mono text-micro text-blue-light">
               {fmtDate(task.scheduledDate)}
             </span>
           </div>
@@ -247,7 +247,7 @@ function TaskRow({
         onClick={deleteTask}
         className="opacity-0 group-hover:opacity-100 transition-opacity text-dim hover:text-burgundy-light flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center"
       >
-        <Trash2 size={13} />
+        <Trash2 size={15} />
       </button>
     </div>
   );
@@ -327,12 +327,12 @@ function MilestoneCard({
             milestone.complete
               ? "bg-olive border-olive"
               : hasNoTasks
-              ? "border-border-light hover:border-blue-muted"
+              ? "border-border-light hover:border-blue-light"
               : "border-border cursor-default opacity-40"
           }`}
           title={hasNoTasks ? "Mark complete" : "Completion is derived from tasks"}
         >
-          {milestone.complete && <Check size={11} className="text-text" strokeWidth={3} />}
+          {milestone.complete && <Check size={13} className="text-bg" strokeWidth={3} />}
         </button>
 
         {/* Name */}
@@ -347,7 +347,7 @@ function MilestoneCard({
               if (e.key === "Enter") saveName();
               if (e.key === "Escape") { setEditingName(false); setNameVal(milestone.name); }
             }}
-            className="flex-1 bg-bg border border-blue-muted rounded px-2 py-1 font-body text-sm text-text focus:outline-none"
+            className="flex-1 bg-bg border border-blue-light rounded px-2 py-1 font-body text-sm text-text focus:outline-none"
           />
         ) : (
           <span
@@ -361,14 +361,14 @@ function MilestoneCard({
 
         {/* Task count */}
         {totalTasks > 0 && (
-          <span className="font-mono text-[10px] text-dim flex-shrink-0">
+          <span className="font-mono text-caption text-dim flex-shrink-0">
             {doneTasks}/{totalTasks}
           </span>
         )}
 
         {/* Target date */}
         {milestone.targetDate && (
-          <span className="font-mono text-[9px] text-dim flex-shrink-0">
+          <span className="font-mono text-micro text-dim flex-shrink-0">
             {fmtDate(milestone.targetDate)}
           </span>
         )}
@@ -378,19 +378,19 @@ function MilestoneCard({
           onClick={() => setEditingName(true)}
           className="text-dim hover:text-muted flex-shrink-0 min-w-[28px] min-h-[28px] flex items-center justify-center"
         >
-          <Pencil size={12} />
+          <Pencil size={14} />
         </button>
         <button
           onClick={deleteMilestone}
           className="text-dim hover:text-burgundy-light flex-shrink-0 min-w-[28px] min-h-[28px] flex items-center justify-center"
         >
-          <Trash2 size={12} />
+          <Trash2 size={14} />
         </button>
         <button
           onClick={() => setExpanded((v) => !v)}
           className="text-dim flex-shrink-0 min-w-[28px] min-h-[28px] flex items-center justify-center"
         >
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
 
@@ -422,9 +422,9 @@ function MilestoneCard({
           ) : (
             <button
               onClick={() => setAddingTask(true)}
-              className="mt-2 flex items-center gap-1.5 font-mono text-[10px] text-dim hover:text-muted transition-colors min-h-[32px]"
+              className="mt-2 flex items-center gap-1.5 font-mono text-caption text-dim hover:text-muted transition-colors min-h-[32px]"
             >
-              <Plus size={11} />
+              <Plus size={13} />
               Add task
             </button>
           )}
@@ -541,7 +541,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
                 if (e.key === "Enter") saveName();
                 if (e.key === "Escape") { setEditingName(false); setNameVal(goal.name); }
               }}
-              className="flex-1 bg-bg border border-blue-muted rounded-card px-3 py-2 font-heading text-xl text-text focus:outline-none"
+              className="flex-1 bg-bg border border-blue-light rounded-card px-3 py-2 font-heading text-xl text-text focus:outline-none"
             />
           ) : (
             <h1
@@ -574,7 +574,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
               className={`font-mono text-xs px-3 py-1.5 rounded-pill border ${statusOpt.bg} ${statusOpt.color} flex items-center gap-1.5`}
             >
               {statusOpt.label}
-              <ChevronDown size={11} />
+              <ChevronDown size={13} />
             </button>
             {showStatusMenu && (
               <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-card overflow-hidden z-20 shadow-lg min-w-[140px]">
@@ -592,7 +592,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
           </div>
 
           {goal.targetDate && (
-            <span className="font-mono text-[10px] text-dim">
+            <span className="font-mono text-caption text-dim">
               {fmtDate(goal.targetDate)}
             </span>
           )}
@@ -616,7 +616,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
             </span>
             {totalTasks === 0 && totalMs === 0 && (
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-dim">Manual</span>
+                <span className="font-mono text-caption text-dim">Manual</span>
                 <input
                   type="range"
                   min={0}
@@ -642,7 +642,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
               style={{ width: `${pct}%`, backgroundColor: progressBarColor(goal.status) }}
             />
           </div>
-          <p className="font-mono text-[10px] text-dim">{progressLabel}</p>
+          <p className="font-mono text-caption text-dim">{progressLabel}</p>
         </div>
 
         {/* ── Description ── */}
@@ -655,7 +655,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
         {/* ── Outcome metric ── */}
         {goal.outcomeMetric && (
           <div className="bg-card rounded-card px-4 py-3.5 mb-6">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-2">
+            <p className="font-mono text-caption uppercase tracking-widest text-dim mb-2">
               {goal.outcomeMetric.label}
             </p>
             <div className="flex items-baseline gap-2">
@@ -665,7 +665,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
                   : "—"}
               </span>
               <span className="font-mono text-sm text-dim">{goal.outcomeMetric.unit}</span>
-              <span className="font-mono text-[10px] text-dim ml-auto">
+              <span className="font-mono text-caption text-dim ml-auto">
                 Target: {goal.outcomeMetric.targetValue} {goal.outcomeMetric.unit}
               </span>
             </div>
@@ -674,7 +674,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
 
         {/* ── Milestones ── */}
         <div className="mb-6">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-3">
+          <p className="font-mono text-caption uppercase tracking-widest text-dim mb-3">
             Milestones
           </p>
 
@@ -715,7 +715,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
                 value={newMilestoneName}
                 onChange={(e) => setNewMilestoneName(e.target.value)}
                 placeholder="Milestone name…"
-                className="w-full bg-card border border-blue-muted rounded-card px-4 py-3 font-body text-sm text-text placeholder:text-dim focus:outline-none"
+                className="w-full bg-card border border-blue-light rounded-card px-4 py-3 font-body text-sm text-text placeholder:text-dim focus:outline-none"
                 onKeyDown={(e) => e.key === "Escape" && setAddingMilestone(false)}
               />
               <div className="flex gap-2 mt-2">
@@ -731,7 +731,7 @@ export default function GoalDetailView({ initialGoal, today }: Props) {
                   onClick={() => { setAddingMilestone(false); setNewMilestoneName(""); }}
                   className="flex items-center gap-1 text-dim font-mono text-xs px-3 py-2.5 rounded-card border border-border min-h-[40px]"
                 >
-                  <X size={12} /> Cancel
+                  <X size={14} /> Cancel
                 </button>
               </div>
             </form>

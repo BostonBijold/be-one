@@ -31,7 +31,7 @@ export default function VirtueSummary({ virtue, eyebrow, size = "sm" }: Props) {
   return (
     <div className={lg ? "" : "bg-bg/60 border border-gold/20 rounded-card px-4 py-3"}>
       {eyebrow && (
-        <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">{eyebrow}</p>
+        <p className="font-mono text-micro uppercase tracking-widest text-gold mb-1">{eyebrow}</p>
       )}
       <h3 className={`font-heading italic text-text leading-tight ${lg ? "text-2xl" : "text-base"}`}>
         {virtue.displayName}
@@ -52,11 +52,11 @@ export default function VirtueSummary({ virtue, eyebrow, size = "sm" }: Props) {
           )}
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="mt-1.5 -ml-1 px-1 min-h-[32px] flex items-center gap-1 font-mono text-[10px] text-gold"
+            className="mt-1.5 -ml-1 px-1 min-h-[32px] flex items-center gap-1 font-mono text-caption text-gold"
             aria-expanded={expanded}
           >
             {expanded ? "Show less" : "Read more"}
-            <ChevronDown size={12} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+            <ChevronDown size={14} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
           </button>
         </>
       )}

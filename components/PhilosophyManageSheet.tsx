@@ -91,17 +91,17 @@ function PhilosophyCard({
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-heading text-base italic text-text">{philosophy.name}</span>
             {isSelected && (
-              <span className="font-mono text-[9px] text-gold bg-gold/10 border border-gold/30 px-2 py-0.5 rounded-pill">
+              <span className="font-mono text-micro text-gold bg-gold/10 border border-gold/30 px-2 py-0.5 rounded-pill">
                 Selected
               </span>
             )}
             {philosophy.isSystem && (
-              <span className="font-mono text-[9px] text-dim bg-bg border border-border px-2 py-0.5 rounded-pill">
+              <span className="font-mono text-micro text-dim bg-bg border border-border px-2 py-0.5 rounded-pill">
                 System
               </span>
             )}
             {!philosophy.isActive && (
-              <span className="font-mono text-[9px] text-tobacco bg-tobacco/10 border border-tobacco/30 px-2 py-0.5 rounded-pill">
+              <span className="font-mono text-micro text-tobacco bg-tobacco/10 border border-tobacco/30 px-2 py-0.5 rounded-pill">
                 Inactive
               </span>
             )}
@@ -109,7 +109,7 @@ function PhilosophyCard({
           {philosophy.description && (
             <p className="font-body text-sm text-muted leading-snug mb-1.5">{philosophy.description}</p>
           )}
-          <p className="font-mono text-[10px] text-dim">{philosophy.virtueCount} virtues</p>
+          <p className="font-mono text-caption text-dim">{philosophy.virtueCount} virtues</p>
         </div>
       </button>
 
@@ -117,21 +117,21 @@ function PhilosophyCard({
         <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border">
           <button
             onClick={onEdit}
-            className="flex items-center gap-1 font-mono text-[10px] text-dim hover:text-text px-2 py-1.5 rounded-pill border border-border min-h-[32px]"
+            className="flex items-center gap-1 font-mono text-caption text-dim hover:text-text px-2 py-1.5 rounded-pill border border-border min-h-[32px]"
           >
-            <Pencil size={11} /> Virtues
+            <Pencil size={13} /> Virtues
           </button>
           <button
             onClick={() => setDuplicating((v) => !v)}
-            className="flex items-center gap-1 font-mono text-[10px] text-dim hover:text-text px-2 py-1.5 rounded-pill border border-border min-h-[32px]"
+            className="flex items-center gap-1 font-mono text-caption text-dim hover:text-text px-2 py-1.5 rounded-pill border border-border min-h-[32px]"
           >
-            <Copy size={11} /> Duplicate
+            <Copy size={13} /> Duplicate
           </button>
           <button
             onClick={onToggleActive}
-            className="flex items-center gap-1 font-mono text-[10px] text-dim hover:text-text px-2 py-1.5 rounded-pill border border-border min-h-[32px] ml-auto"
+            className="flex items-center gap-1 font-mono text-caption text-dim hover:text-text px-2 py-1.5 rounded-pill border border-border min-h-[32px] ml-auto"
           >
-            {philosophy.isActive ? <EyeOff size={11} /> : <Eye size={11} />}
+            {philosophy.isActive ? <EyeOff size={13} /> : <Eye size={13} />}
             {philosophy.isActive ? "Deactivate" : "Activate"}
           </button>
         </div>
@@ -165,7 +165,7 @@ function PhilosophyCard({
               }}
               className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-3 py-1.5 rounded-pill min-h-[32px] disabled:opacity-50"
             >
-              <Check size={11} /> {saving ? "Copying…" : "Confirm"}
+              <Check size={13} /> {saving ? "Copying…" : "Confirm"}
             </button>
             <button
               onClick={() => setDuplicating(false)}
@@ -228,19 +228,19 @@ function SortableVirtueRow({
           <p className="font-body text-sm text-text truncate">
             {virtue.order}. {virtue.displayName}
           </p>
-          <p className="font-mono text-[10px] text-dim truncate">{virtue.tagline}</p>
+          <p className="font-mono text-caption text-dim truncate">{virtue.tagline}</p>
         </div>
         <button
           onClick={() => setEditing((v) => !v)}
           className="text-dim hover:text-muted min-w-[32px] min-h-[32px] flex items-center justify-center"
         >
-          <Pencil size={13} />
+          <Pencil size={15} />
         </button>
         <button
           onClick={onToggleActive}
           className="text-dim hover:text-muted min-w-[32px] min-h-[32px] flex items-center justify-center"
         >
-          {virtue.isActive ? <EyeOff size={13} /> : <Eye size={13} />}
+          {virtue.isActive ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
       </div>
 
@@ -290,7 +290,7 @@ function SortableVirtueRow({
               disabled={saving || !name.trim() || !slug.trim() || !displayName.trim() || !tagline.trim()}
               className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-3 py-1.5 rounded-pill min-h-[32px] disabled:opacity-50"
             >
-              <Check size={11} /> {saving ? "Saving…" : "Save"}
+              <Check size={13} /> {saving ? "Saving…" : "Save"}
             </button>
             <button
               onClick={() => setEditing(false)}
@@ -460,7 +460,7 @@ function VirtueEditor({ philosophy, onBack }: { philosophy: PhilosophyRow; onBac
               disabled={savingNew || !newName.trim() || !newSlug.trim()}
               className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-3 py-1.5 rounded-pill min-h-[32px] disabled:opacity-50"
             >
-              <Check size={11} /> {savingNew ? "Adding…" : "Add virtue"}
+              <Check size={13} /> {savingNew ? "Adding…" : "Add virtue"}
             </button>
             <button
               onClick={() => setAdding(false)}
@@ -475,7 +475,7 @@ function VirtueEditor({ philosophy, onBack }: { philosophy: PhilosophyRow; onBac
           onClick={() => setAdding(true)}
           className="w-full mt-4 flex items-center justify-center gap-1.5 font-mono text-xs text-gold border border-dashed border-gold/40 rounded-card py-3 hover:bg-gold/5"
         >
-          <Plus size={13} /> Add virtue
+          <Plus size={15} /> Add virtue
         </button>
       )}
     </div>
@@ -529,14 +529,14 @@ function CreateForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: 
         rows={2}
         className="w-full bg-bg border border-border rounded-card px-3 py-2 font-body text-sm text-text outline-none focus:border-gold resize-none"
       />
-      {error && <p className="font-mono text-[10px] text-burgundy-light">{error}</p>}
+      {error && <p className="font-mono text-caption text-burgundy-light">{error}</p>}
       <div className="flex gap-2">
         <button
           onClick={create}
           disabled={saving || !name.trim() || !slug.trim()}
           className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-3 py-1.5 rounded-pill min-h-[32px] disabled:opacity-50"
         >
-          <Check size={11} /> {saving ? "Creating…" : "Create"}
+          <Check size={13} /> {saving ? "Creating…" : "Create"}
         </button>
         <button
           onClick={onCancel}
@@ -580,7 +580,7 @@ function MarketplaceBody({ isAdmin, currentPhilosophyId, onSelect, onReset }: Pr
           onClick={() => setCreating(true)}
           className="w-full mb-4 flex items-center justify-center gap-1.5 font-mono text-xs text-gold border border-dashed border-gold/40 rounded-card py-3 hover:bg-gold/5"
         >
-          <Plus size={13} /> New Philosophy
+          <Plus size={15} /> New Philosophy
         </button>
       )}
       {creating && (
@@ -596,7 +596,7 @@ function MarketplaceBody({ isAdmin, currentPhilosophyId, onSelect, onReset }: Pr
             setResetting(false);
           }}
           disabled={resetting}
-          className="w-full mb-4 font-mono text-[10px] text-dim hover:text-burgundy-light border border-border rounded-card py-2.5 disabled:opacity-50"
+          className="w-full mb-4 font-mono text-caption text-dim hover:text-burgundy-light border border-border rounded-card py-2.5 disabled:opacity-50"
         >
           {resetting ? "Resetting…" : "Reset Virtue Progress"}
         </button>
@@ -641,7 +641,7 @@ function MarketplaceBody({ isAdmin, currentPhilosophyId, onSelect, onReset }: Pr
             />
           ))}
           {selecting && (
-            <p className="font-mono text-[10px] text-dim text-center">Selecting…</p>
+            <p className="font-mono text-caption text-dim text-center">Selecting…</p>
           )}
         </div>
       )}
@@ -657,7 +657,7 @@ export function PhilosophyMarketplaceInline(props: Props) {
   return (
     <div className="pt-2">
       <div className="mb-5">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">
+        <p className="font-mono text-micro uppercase tracking-widest text-gold mb-1">
           Choose Your Philosophy
         </p>
         <h2 className="font-heading text-xl italic text-text">Which virtues will you live by?</h2>

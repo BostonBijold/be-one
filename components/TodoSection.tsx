@@ -55,14 +55,14 @@ export default function TodoSection({
   return (
     <div className="mt-10">
       <div className="flex items-center gap-3 mb-4">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-dim">
+        <span className="font-mono text-caption uppercase tracking-widest text-dim">
           {title}{todos.length > 0 ? ` · ${doneCount}/${todos.length}` : ""}
         </span>
         <div className="flex-1 h-px bg-border" />
         {!addButtonLabel && (
           <button
             onClick={onAdd}
-            className="font-mono text-[10px] text-blue-muted hover:text-blue-muted/80 transition-colors"
+            className="font-mono text-caption text-blue-light hover:text-blue-light/80 transition-colors"
           >
             + Add
           </button>
@@ -84,7 +84,7 @@ export default function TodoSection({
         ) : (
           <button
             onClick={onAdd}
-            className="w-full flex items-center justify-center gap-2 border border-dashed border-border-light text-dim font-body text-sm py-5 rounded-card hover:border-blue-muted/40 hover:text-blue-muted transition-colors min-h-[44px]"
+            className="w-full flex items-center justify-center gap-2 border border-dashed border-border-light text-dim font-body text-sm py-5 rounded-card hover:border-blue-muted/40 hover:text-blue-light transition-colors min-h-[44px]"
           >
             {emptyLabel}
           </button>
@@ -105,7 +105,7 @@ export default function TodoSection({
                   aria-label={todo.done ? "Mark not done" : "Mark done"}
                   className={`flex items-center justify-center w-7 h-7 rounded-full border-2 flex-shrink-0 transition-colors ${
                     todo.done
-                      ? "bg-blue-muted/20 border-blue-muted text-blue-muted"
+                      ? "bg-blue-muted/20 border-blue-light text-blue-light"
                       : isOverdue
                         ? "border-burgundy/50 text-transparent hover:border-burgundy/70"
                         : "border-border-light text-transparent hover:border-blue-muted/50"
@@ -126,17 +126,17 @@ export default function TodoSection({
                     {todo.name}
                   </p>
                   {isOverdue ? (
-                    <p className="font-mono text-[9px] text-burgundy-light/70 uppercase tracking-widest mt-0.5">
+                    <p className="font-mono text-micro text-burgundy-light/70 uppercase tracking-widest mt-0.5">
                       {daysLate(todo.scheduledDate, viewingDate)}d overdue
                     </p>
                   ) : showDates ? (
-                    <p className="font-mono text-[9px] text-dim uppercase tracking-widest mt-0.5">
+                    <p className="font-mono text-micro text-dim uppercase tracking-widest mt-0.5">
                       {fmtDate(todo.scheduledDate)}
                     </p>
                   ) : null}
                 </button>
                 {todo.estimatedMinutes != null && (
-                  <span className="font-mono text-[10px] text-dim flex-shrink-0">
+                  <span className="font-mono text-caption text-dim flex-shrink-0">
                     {fmtMins(todo.estimatedMinutes)}
                   </span>
                 )}
@@ -145,7 +145,7 @@ export default function TodoSection({
                   aria-label="Delete to-do"
                   className="text-dim hover:text-burgundy-light transition-colors flex-shrink-0 p-1"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
               </div>
             );

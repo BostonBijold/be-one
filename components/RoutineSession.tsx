@@ -100,7 +100,7 @@ const TIMELINE_COLOR: Record<TimelineColorState, string> = {
   done: "#5a6b35",        // olive
   active: "#5a6b35",      // olive
   "active-over": "#c47a2a", // amber
-  pending: "#3d3b2e",     // border-light
+  pending: "#4d4a3c",     // border-light
 };
 
 export default function RoutineSession({ groupId, groupName, groupStartTime = null, items, logs: externalLogs, today, startIndex = 0, thisWeekVirtue = null, onClose, onFinish, onOpenRoutineReview }: Props) {
@@ -599,17 +599,17 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
             <div className="flex justify-center gap-10 mt-8">
               <div>
                 <p className="font-mono text-2xl text-text">{totalActual}m</p>
-                <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">actual</p>
+                <p className="font-mono text-dim text-caption uppercase tracking-widest mt-1">actual</p>
               </div>
               {totalProjected > 0 && (
                 <div>
                   <p className="font-mono text-2xl text-muted">{totalProjected}m</p>
-                  <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">projected</p>
+                  <p className="font-mono text-dim text-caption uppercase tracking-widest mt-1">projected</p>
                 </div>
               )}
               <div>
                 <p className="font-mono text-2xl text-text">{doneCount}/{items.length}</p>
-                <p className="font-mono text-dim text-[10px] uppercase tracking-widest mt-1">completed</p>
+                <p className="font-mono text-dim text-caption uppercase tracking-widest mt-1">completed</p>
               </div>
             </div>
           </div>
@@ -638,7 +638,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                       {variance > 0 ? `+${variance}m` : variance < 0 ? `${variance}m` : "on target"}
                     </span>
                   )}
-                  <span className={`font-mono text-xs ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : log.state === "not_applicable" ? "text-dim" : "text-blue-muted"}`}>
+                  <span className={`font-mono text-xs ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : log.state === "not_applicable" ? "text-dim" : "text-blue-light"}`}>
                     {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : log.state === "not_applicable" ? "–" : "~"}
                   </span>
                 </div>
@@ -648,7 +648,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
         </div>
 
         <div className="px-4 py-4 flex-shrink-0 border-t border-border">
-          <button onClick={onFinish} className="w-full py-4 rounded-card bg-olive text-text font-body font-medium">
+          <button onClick={onFinish} className="w-full py-4 rounded-card bg-olive text-bg font-body font-medium">
             Finish
           </button>
         </div>
@@ -867,7 +867,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
           <div className="flex justify-center flex-shrink-0 pb-3">
             <div className="relative w-44 h-44">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#2e2c22" strokeWidth="9" />
+                <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#38352a" strokeWidth="9" />
                 <circle
                   cx="80" cy="80" r={RING_R}
                   fill="none"
@@ -887,10 +887,10 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-mono text-3xl font-semibold leading-none" style={{ color: isOver ? "#a03a3a" : "#e8e0cc" }}>
+                <span className="font-mono text-3xl font-semibold leading-none" style={{ color: isOver ? "#cf6a5f" : "#ece5d3" }}>
                   {countdownDisplay}
                 </span>
-                <span className="font-mono text-[10px] text-dim mt-1">{isOver ? "over" : "remaining"}</span>
+                <span className="font-mono text-caption text-dim mt-1">{isOver ? "over" : "remaining"}</span>
               </div>
             </div>
           </div>
@@ -901,7 +901,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
           <div className="flex justify-center flex-shrink-0 pb-3">
             <div className="relative w-44 h-44">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
-                <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#2e2c22" strokeWidth="9" />
+                <circle cx="80" cy="80" r={RING_R} fill="none" stroke="#38352a" strokeWidth="9" />
                 <circle
                   cx="80" cy="80" r={RING_R}
                   fill="none"
@@ -924,7 +924,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                 <span className="font-mono text-3xl font-semibold leading-none text-text">
                   {fmtMins(elapsed)}
                 </span>
-                <span className="font-mono text-[10px] text-dim mt-1">elapsed</span>
+                <span className="font-mono text-caption text-dim mt-1">elapsed</span>
               </div>
             </div>
           </div>
@@ -977,13 +977,13 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
             <button onClick={handleMissed} className="flex-1 py-2.5 rounded-card border border-burgundy/30 text-burgundy-light font-body text-sm min-h-[44px]">
               ✗ Missed
             </button>
-            <button onClick={handleRest} className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-muted font-body text-sm min-h-[44px]">
+            <button onClick={handleRest} className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-light font-body text-sm min-h-[44px]">
               ~ Rest
             </button>
           </div>
         ) : (
           <>
-            <button onClick={handleDone} className="w-full py-3 rounded-card bg-olive text-text font-body font-medium">
+            <button onClick={handleDone} className="w-full py-3 rounded-card bg-olive text-bg font-body font-medium">
               Done · log {Math.max(1, Math.round(elapsed / 60))}m
             </button>
             <div className="flex gap-2">
@@ -996,7 +996,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
               <button onClick={handleMissed} className="flex-1 py-2.5 rounded-card border border-burgundy/30 text-burgundy-light font-body text-sm min-h-[44px]">
                 ✗ Missed
               </button>
-              <button onClick={handleRest} className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-muted font-body text-sm min-h-[44px]">
+              <button onClick={handleRest} className="flex-1 py-2.5 rounded-card border border-blue-muted/30 text-blue-light font-body text-sm min-h-[44px]">
                 ~ Rest
               </button>
             </div>
@@ -1012,7 +1012,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
       {/* Habit list */}
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
         {jumpNotice && (
-          <p className="font-mono text-[10px] text-burgundy-light text-center mb-2">{jumpNotice}</p>
+          <p className="font-mono text-caption text-burgundy-light text-center mb-2">{jumpNotice}</p>
         )}
         <div className="space-y-1">
           {items.map((item, i) => {
@@ -1056,7 +1056,7 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                       : isDone
                         ? "opacity-60"
                         : isUpcoming
-                          ? "opacity-40"
+                          ? "opacity-75"
                           : ""
                 } ${canJump ? "cursor-pointer active:opacity-70 active:bg-card-hover" : ""}`}
               >
@@ -1070,18 +1070,18 @@ export default function RoutineSession({ groupId, groupName, groupStartTime = nu
                   {isItemCheckbox ? "✓" : isItemStopwatch ? "⏱" : `${item.projectedMinutes}m`}
                 </span>
                 {log && (
-                  <span className={`font-mono text-xs flex-shrink-0 ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : log.state === "not_applicable" ? "text-dim" : "text-blue-muted"}`}>
+                  <span className={`font-mono text-xs flex-shrink-0 ml-1 ${log.state === "done" ? "text-olive" : log.state === "missed" ? "text-burgundy-light" : log.state === "not_applicable" ? "text-dim" : "text-blue-light"}`}>
                     {log.state === "done" ? "✓" : log.state === "missed" ? "✗" : log.state === "not_applicable" ? "–" : "~"}
                   </span>
                 )}
                 {isPausedElsewhere && (
-                  <span className="font-mono text-amber text-[9px] flex-shrink-0">paused</span>
+                  <span className="font-mono text-amber text-micro flex-shrink-0">paused</span>
                 )}
                 {isRunningElsewhere && (
-                  <span className="font-mono text-amber text-[9px] flex-shrink-0">running</span>
+                  <span className="font-mono text-amber text-micro flex-shrink-0">running</span>
                 )}
-                {isCurrent && !log && <ChevronRight size={14} className="text-olive flex-shrink-0" />}
-                {canJump && <span className="font-mono text-dim text-[9px] flex-shrink-0">jump</span>}
+                {isCurrent && !log && <ChevronRight size={16} className="text-olive flex-shrink-0" />}
+                {canJump && <span className="font-mono text-dim text-micro flex-shrink-0">jump</span>}
               </div>
             );
           })}

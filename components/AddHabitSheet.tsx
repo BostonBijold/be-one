@@ -172,7 +172,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
               {/* Search */}
               <div className="px-4 mb-3 flex-shrink-0">
                 <div className="flex items-center gap-2 bg-bg border border-border rounded-card px-3 py-2">
-                  <Search size={14} className="text-dim flex-shrink-0" />
+                  <Search size={16} className="text-dim flex-shrink-0" />
                   <input
                     ref={searchRef}
                     type="text"
@@ -198,7 +198,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
 
                 {Object.entries(byCategory).map(([category, items]) => (
                   <div key={category} className="mb-5">
-                    <p className="font-mono text-[10px] uppercase tracking-widest text-dim mb-2">
+                    <p className="font-mono text-caption uppercase tracking-widest text-dim mb-2">
                       {CATEGORY_LABELS[category] ?? category}
                     </p>
                     <div className="bg-bg rounded-card divide-y divide-border overflow-hidden">
@@ -235,7 +235,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
               <div className="space-y-4">
                 {/* Type */}
                 <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                  <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-2">
                     Type
                   </label>
                   <div className="flex bg-bg border border-border rounded-card p-0.5">
@@ -243,7 +243,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                       type="button"
                       onClick={() => setCustomType("standard")}
                       className={`flex-1 py-2 rounded-card font-mono text-xs transition-colors ${
-                        customType === "standard" ? "bg-olive text-text" : "text-dim"
+                        customType === "standard" ? "bg-olive text-bg" : "text-dim"
                       }`}
                     >
                       ▶ Countdown
@@ -252,7 +252,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                       type="button"
                       onClick={() => setCustomType("stopwatch")}
                       className={`flex-1 py-2 rounded-card font-mono text-xs transition-colors ${
-                        customType === "stopwatch" ? "bg-olive text-text" : "text-dim"
+                        customType === "stopwatch" ? "bg-olive text-bg" : "text-dim"
                       }`}
                     >
                       ⏱ Stopwatch
@@ -261,13 +261,13 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                       type="button"
                       onClick={() => setCustomType("checkbox")}
                       className={`flex-1 py-2 rounded-card font-mono text-xs transition-colors ${
-                        customType === "checkbox" ? "bg-olive text-text" : "text-dim"
+                        customType === "checkbox" ? "bg-olive text-bg" : "text-dim"
                       }`}
                     >
                       ✓ Checkbox
                     </button>
                   </div>
-                  <p className="font-mono text-[9px] text-dim mt-1.5">
+                  <p className="font-mono text-micro text-dim mt-1.5">
                     {customType === "standard"
                       ? "Set a target. Timer counts down. Tracks projected vs actual."
                       : customType === "stopwatch"
@@ -278,7 +278,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
 
                 {/* Icon */}
                 <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                  <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-2">
                     Icon
                   </label>
                   <IconPicker selected={customIcon} onSelect={setCustomIcon} />
@@ -286,7 +286,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
 
                 {/* Name */}
                 <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                  <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-2">
                     Habit name
                   </label>
                   <input
@@ -301,7 +301,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                 {/* Time — timed only */}
                 {customType === "standard" && ( // minutes only for countdown
                   <div>
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                    <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-2">
                       Target minutes
                     </label>
                     <input
@@ -316,7 +316,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
 
                 {/* Schedule */}
                 <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                  <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-2">
                     Days expected
                   </label>
                   <div className="flex gap-1.5">
@@ -327,7 +327,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                         onClick={() => toggleCustomDay(day)}
                         className={`w-9 h-9 rounded-full font-mono text-xs transition-colors ${
                           customScheduledDays.includes(day)
-                            ? "bg-olive text-text"
+                            ? "bg-olive text-bg"
                             : "bg-bg border border-border text-dim"
                         }`}
                       >
@@ -346,7 +346,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                   >
                     <span className="text-left">
                       <span className="font-body text-sm text-text block">Ask each day instead</span>
-                      <span className="font-mono text-[9px] text-dim">
+                      <span className="font-mono text-micro text-dim">
                         &ldquo;Do you need to {customName.trim() || "…"} today?&rdquo; — Yes starts it, No counts as rest
                       </span>
                     </span>
@@ -366,7 +366,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
 
                 {/* Threshold */}
                 <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-dim block mb-2">
+                  <label className="font-mono text-caption uppercase tracking-widest text-dim block mb-2">
                     Counts as a win when done
                   </label>
                   <div className="flex items-center gap-2">
@@ -389,7 +389,7 @@ export default function AddHabitSheet({ groupId, groupName, onAdd, onClose }: Pr
                 <button
                   onClick={handleSaveCustom}
                   disabled={!customName.trim() || saving}
-                  className="w-full py-4 rounded-card bg-olive text-text font-body font-medium disabled:opacity-40 mt-4"
+                  className="w-full py-4 rounded-card bg-olive text-bg font-body font-medium disabled:opacity-40 mt-4"
                 >
                   {saving ? "Saving…" : "Save & Add to Routine"}
                 </button>
