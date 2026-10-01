@@ -17,13 +17,22 @@ export type LogState = "in_progress" | "paused" | "done" | "missed" | "rest" | "
 // but the value exists now so that work doesn't need another schema change.
 export type ReviewEntryPoint = "sunday_prompt" | "analytics_button" | "notification";
 
-export interface IReviewMetadata {
-  entryPoint: ReviewEntryPoint;
-  groupId: mongoose.Types.ObjectId; // which routine group this session reviewed
-  changesMade: boolean;
+export interface IReviewGroupChanges {
   itemGoalChanges?: Array<{ routineItemId: mongoose.Types.ObjectId; oldMinutes: number; newMinutes: number }>;
   startTimeChange?: { old: string | null; new: string | null };
   reorder?: { old: mongoose.Types.ObjectId[]; new: mongoose.Types.ObjectId[] };
+}
+
+// Top-level groupId + change fields describe the first group reviewed in the
+// session (the only one, in the common case). A sunday_prompt session can
+// return to the group picker and review more groups before finishing — those
+// land in additionalGroups, since there's still exactly one routine_review
+// log per day. changesMade is session-wide (any group).
+export interface IReviewMetadata extends IReviewGroupChanges {
+  entryPoint: ReviewEntryPoint;
+  groupId: mongoose.Types.ObjectId; // first routine group this session reviewed
+  changesMade: boolean;
+  additionalGroups?: Array<IReviewGroupChanges & { groupId: mongoose.Types.ObjectId }>;
 }
 
 export interface IRoutineLog extends Document {
@@ -53,33 +62,47 @@ export interface IRoutineLog extends Document {
   createdAt: Date;
 }
 
+// Shared by the top-level (first group) and each additionalGroups entry.
+const groupChangeFields = {
+  itemGoalChanges: {
+    type: [
+      {
+        routineItemId: { type: Schema.Types.ObjectId, ref: "RoutineItem", required: true },
+        oldMinutes: { type: Number, required: true },
+        newMinutes: { type: Number, required: true },
+      },
+    ],
+    default: undefined,
+  },
+  startTimeChange: {
+    type: new Schema({ old: { type: String, default: null }, new: { type: String, default: null } }, { _id: false }),
+    default: undefined,
+  },
+  reorder: {
+    type: new Schema(
+      {
+        old: { type: [Schema.Types.ObjectId], default: undefined },
+        new: { type: [Schema.Types.ObjectId], default: undefined },
+      },
+      { _id: false }
+    ),
+    default: undefined,
+  },
+};
+
 const ReviewMetadataSchema = new Schema<IReviewMetadata>(
   {
     entryPoint: { type: String, enum: ["sunday_prompt", "analytics_button", "notification"], required: true },
     groupId: { type: Schema.Types.ObjectId, ref: "RoutineGroup", required: true },
     changesMade: { type: Boolean, required: true },
-    itemGoalChanges: {
+    ...groupChangeFields,
+    additionalGroups: {
       type: [
-        {
-          routineItemId: { type: Schema.Types.ObjectId, ref: "RoutineItem", required: true },
-          oldMinutes: { type: Number, required: true },
-          newMinutes: { type: Number, required: true },
-        },
+        new Schema(
+          { groupId: { type: Schema.Types.ObjectId, ref: "RoutineGroup", required: true }, ...groupChangeFields },
+          { _id: false }
+        ),
       ],
-      default: undefined,
-    },
-    startTimeChange: {
-      type: new Schema({ old: { type: String, default: null }, new: { type: String, default: null } }, { _id: false }),
-      default: undefined,
-    },
-    reorder: {
-      type: new Schema(
-        {
-          old: { type: [Schema.Types.ObjectId], default: undefined },
-          new: { type: [Schema.Types.ObjectId], default: undefined },
-        },
-        { _id: false }
-      ),
       default: undefined,
     },
   },

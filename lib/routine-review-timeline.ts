@@ -1,13 +1,13 @@
 // Turns a routine group's items into proportional timeline segments for the
-// Routine Review flow's goal-vs-average comparison (see
+// Routine Review flow's Goal / Actual avg / Proposed bars (see
 // components/RoutineReviewFlow.tsx) — the retrospective sibling of
 // lib/routine-timeline.ts's live pacing bar. There's no done/active/pending
-// state here: a review timeline is two fixed pictures (goal vs rolling
-// average), not a session in progress, so every segment is just "this
-// item's share of one static total." Call it once with each item's
-// projectedMinutes for the "Goal" bar and once with avgActualMins (falling
-// back to projectedMinutes when an item has no logged average yet) for the
-// "Actual avg" bar.
+// state here: each review bar is a fixed picture (or, for Proposed, a live
+// preview of staged edits), not a session in progress, so every segment is
+// just "this item's share of one total." The caller picks the minutes:
+// original projectedMinutes for Goal, avgActualMins (falling back to
+// projectedMinutes) for Actual avg, and the edited goals in staged order for
+// Proposed.
 
 export interface ReviewTimelineItem {
   id: string;
