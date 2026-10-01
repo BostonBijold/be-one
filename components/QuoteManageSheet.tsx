@@ -127,14 +127,14 @@ function QuoteForm({
         placeholder="Source (book/speech, optional)"
         className="w-full bg-card border border-border rounded-card px-3 py-2 font-body text-sm text-text outline-none focus:border-gold"
       />
-      {error && <p className="font-mono text-[10px] text-burgundy-light">{error}</p>}
+      {error && <p className="font-mono text-caption text-burgundy-light">{error}</p>}
       <div className="flex gap-2">
         <button
           onClick={submit}
           disabled={saving || !text.trim() || !author.trim() || !genre.trim()}
           className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-3 py-1.5 rounded-pill min-h-[32px] disabled:opacity-50"
         >
-          <Check size={11} /> {saving ? "Saving…" : "Save"}
+          <Check size={13} /> {saving ? "Saving…" : "Save"}
         </button>
         <button
           onClick={onCancel}
@@ -169,17 +169,17 @@ function QuoteListRow({
             &ldquo;{truncate(quote.text, 90)}&rdquo;
           </p>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className="font-mono text-[10px] text-dim">— {quote.author}</span>
-            <span className="font-mono text-[9px] text-dim bg-bg border border-border px-1.5 py-0.5 rounded-pill">
+            <span className="font-mono text-caption text-dim">— {quote.author}</span>
+            <span className="font-mono text-micro text-dim bg-bg border border-border px-1.5 py-0.5 rounded-pill">
               {quote.genre}
             </span>
             {quote.virtue && (
-              <span className="font-mono text-[9px] text-gold bg-gold/10 border border-gold/30 px-1.5 py-0.5 rounded-pill">
+              <span className="font-mono text-micro text-gold bg-gold/10 border border-gold/30 px-1.5 py-0.5 rounded-pill">
                 {quote.virtue}{quote.virtueDayIndex ? ` · day ${quote.virtueDayIndex}` : ""}
               </span>
             )}
             {!quote.isActive && (
-              <span className="font-mono text-[9px] text-tobacco bg-tobacco/10 border border-tobacco/30 px-1.5 py-0.5 rounded-pill">
+              <span className="font-mono text-micro text-tobacco bg-tobacco/10 border border-tobacco/30 px-1.5 py-0.5 rounded-pill">
                 Inactive
               </span>
             )}
@@ -189,13 +189,13 @@ function QuoteListRow({
           onClick={() => setEditing((v) => !v)}
           className="text-dim hover:text-muted min-w-[32px] min-h-[32px] flex items-center justify-center flex-shrink-0"
         >
-          <Pencil size={13} />
+          <Pencil size={15} />
         </button>
         <button
           onClick={onToggleActive}
           className="text-dim hover:text-muted min-w-[32px] min-h-[32px] flex items-center justify-center flex-shrink-0"
         >
-          {quote.isActive ? <EyeOff size={13} /> : <Eye size={13} />}
+          {quote.isActive ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
       </div>
 
@@ -237,14 +237,14 @@ function VirtueGrid({
 
   return (
     <div>
-      <p className="font-mono text-[10px] text-dim mb-3">
+      <p className="font-mono text-caption text-dim mb-3">
         {pool.length} active quote{pool.length === 1 ? "" : "s"} in the pool for {virtue.name}.
         Unpinned slots draw one at random from this pool each day.
       </p>
       <div className="space-y-3">
         {Array.from({ length: OCCURRENCE_COUNT }).map((_, occ) => (
           <div key={occ}>
-            <p className="font-mono text-[9px] uppercase tracking-widest text-dim mb-1.5">
+            <p className="font-mono text-micro uppercase tracking-widest text-dim mb-1.5">
               Occurrence {occ + 1}
             </p>
             <div className="grid grid-cols-7 gap-1.5">
@@ -257,7 +257,7 @@ function VirtueGrid({
                     <button
                       onClick={() => setOpenIndex(isOpen ? null : idx)}
                       title={pinned ? pinned.text : "Auto-filled from pool"}
-                      className={`w-full aspect-square rounded-card border flex flex-col items-center justify-center font-mono text-[9px] ${
+                      className={`w-full aspect-square rounded-card border flex flex-col items-center justify-center font-mono text-micro ${
                         pinned
                           ? "border-gold/50 bg-gold/10 text-gold"
                           : pool.length > 0
@@ -269,7 +269,7 @@ function VirtueGrid({
                     </button>
                     {isOpen && (
                       <div className="absolute z-10 top-full left-0 mt-1 w-56 bg-card border border-border rounded-card p-2 shadow-lg">
-                        <p className="font-mono text-[9px] text-dim mb-1.5">
+                        <p className="font-mono text-micro text-dim mb-1.5">
                           Pin a quote to day {idx}
                           {pinned && ` (currently: "${truncate(pinned.text, 40)}")`}
                         </p>
@@ -426,9 +426,9 @@ export default function QuoteManageSheet({ onClose }: Props) {
             {selectedVirtueOption && (
               <button
                 onClick={() => setView((v) => (v === "grid" ? "list" : "grid"))}
-                className="flex items-center gap-1 font-mono text-[10px] text-dim hover:text-text px-2.5 py-2 rounded-pill border border-border flex-shrink-0"
+                className="flex items-center gap-1 font-mono text-caption text-dim hover:text-text px-2.5 py-2 rounded-pill border border-border flex-shrink-0"
               >
-                {view === "grid" ? <ListIcon size={12} /> : <Grid3x3 size={12} />}
+                {view === "grid" ? <ListIcon size={14} /> : <Grid3x3 size={14} />}
                 {view === "grid" ? "List" : "Grid"}
               </button>
             )}
@@ -443,7 +443,7 @@ export default function QuoteManageSheet({ onClose }: Props) {
                   onClick={() => setAdding(true)}
                   className="w-full mb-4 flex items-center justify-center gap-1.5 font-mono text-xs text-gold border border-dashed border-gold/40 rounded-card py-3 hover:bg-gold/5"
                 >
-                  <Plus size={13} /> Add Quote
+                  <Plus size={15} /> Add Quote
                 </button>
               )}
               {adding && (

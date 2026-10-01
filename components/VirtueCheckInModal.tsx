@@ -125,7 +125,7 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
             </div>
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">
+                <p className="font-mono text-micro uppercase tracking-widest text-gold mb-1">
                   Daily Check-in
                 </p>
                 <h2 className="font-heading text-lg text-text leading-tight">{dateLabel}</h2>
@@ -147,7 +147,7 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
                     style={{ width: `${(answeredCount / virtues.length) * 100}%` }}
                   />
                 </div>
-                <span className="font-mono text-[10px] text-dim tabular-nums">
+                <span className="font-mono text-caption text-dim tabular-nums">
                   {answeredCount}/{virtues.length} answered
                 </span>
               </div>
@@ -169,7 +169,7 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
             {loading && (
               <p className="text-dim font-mono text-xs text-center py-8">Loading virtues…</p>
             )}
-            <p className="font-mono text-[9px] text-dim px-2 pt-1 pb-2">
+            <p className="font-mono text-micro text-dim px-2 pt-1 pb-2">
               For each virtue — did you live it today? Be honest.
             </p>
             {virtues.map((virtue) => {
@@ -187,12 +187,12 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-body text-sm text-text">{virtue.name}</p>
-                    <p className="font-mono text-[9px] text-dim mt-0.5 truncate">{virtue.tagline}</p>
+                    <p className="font-mono text-micro text-dim mt-0.5 truncate">{virtue.tagline}</p>
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     <button
                       onClick={() => setAnswer(virtue._id, "yes")}
-                      className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold transition-colors ${
+                      className={`px-3 py-1.5 rounded-full font-mono text-caption font-bold transition-colors ${
                         answer === "yes"
                           ? "bg-olive text-bg"
                           : "bg-bg text-dim border border-border hover:border-olive hover:text-olive"
@@ -202,7 +202,7 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
                     </button>
                     <button
                       onClick={() => setAnswer(virtue._id, "no")}
-                      className={`px-3 py-1.5 rounded-full font-mono text-[10px] font-bold transition-colors ${
+                      className={`px-3 py-1.5 rounded-full font-mono text-caption font-bold transition-colors ${
                         answer === "no"
                           ? "bg-burgundy text-text"
                           : "bg-bg text-dim border border-border hover:border-burgundy-light hover:text-burgundy-light"
@@ -222,7 +222,7 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
               <p className="font-mono text-xs text-burgundy-light mb-3">{error}</p>
             )}
             {!error && (
-              <p className="font-mono text-[10px] text-dim mb-3 text-center">
+              <p className="font-mono text-caption text-dim mb-3 text-center">
                 {!allAnswered
                   ? `${virtues.length - answeredCount} virtue${virtues.length - answeredCount !== 1 ? "s" : ""} left to answer`
                   : `${Object.values(answers).filter((a) => a === "yes").length}/${virtues.length} virtues lived today.`}

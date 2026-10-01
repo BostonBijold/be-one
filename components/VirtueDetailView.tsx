@@ -115,7 +115,7 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
           >
             <ArrowLeft size={20} />
           </button>
-          <span className="font-mono text-[10px] text-dim uppercase tracking-widest">
+          <span className="font-mono text-caption text-dim uppercase tracking-widest">
             Virtues
           </span>
         </div>
@@ -123,11 +123,11 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
         {/* ── Hero ── */}
         <div className="pt-4 pb-8">
           <div className="flex items-start gap-3 mb-2">
-            <span className="font-mono text-[10px] text-dim mt-1">
+            <span className="font-mono text-caption text-dim mt-1">
               {String(virtue.order).padStart(2, "0")} / {virtueCount}
             </span>
             {isCurrent && (
-              <span className="font-mono text-[9px] text-gold bg-gold/10 border border-gold/30 px-2 py-0.5 rounded-pill">
+              <span className="font-mono text-micro text-gold bg-gold/10 border border-gold/30 px-2 py-0.5 rounded-pill">
                 This Week
               </span>
             )}
@@ -143,7 +143,7 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
         {/* ── Etymology ── */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-dim">
+            <p className="font-mono text-caption uppercase tracking-widest text-dim">
               Etymology
             </p>
             {isAdmin && !editingEtym && (
@@ -151,7 +151,7 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
                 onClick={() => setEditingEtym(true)}
                 className="text-dim hover:text-muted min-w-[32px] min-h-[32px] flex items-center justify-center"
               >
-                <Pencil size={13} />
+                <Pencil size={15} />
               </button>
             )}
           </div>
@@ -174,13 +174,13 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
                   disabled={savingEtym}
                   className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-3 py-1.5 rounded-pill min-h-[32px] disabled:opacity-50"
                 >
-                  <Check size={11} /> {savingEtym ? "Saving…" : "Save"}
+                  <Check size={13} /> {savingEtym ? "Saving…" : "Save"}
                 </button>
                 <button
                   onClick={cancelEtym}
                   className="flex items-center gap-1.5 text-dim font-mono text-xs px-3 py-1.5 rounded-pill border border-border min-h-[32px]"
                 >
-                  <X size={11} /> Cancel
+                  <X size={13} /> Cancel
                 </button>
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
         {/* ── Reflection / Essay ── */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-dim">
+            <p className="font-mono text-caption uppercase tracking-widest text-dim">
               Reflection
             </p>
             {isAdmin && !editingEssay && (
@@ -215,7 +215,7 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
                 onClick={() => setEditingEssay(true)}
                 className="text-dim hover:text-muted min-w-[32px] min-h-[32px] flex items-center justify-center"
               >
-                <Pencil size={13} />
+                <Pencil size={15} />
               </button>
             )}
           </div>
@@ -238,13 +238,13 @@ export default function VirtueDetailView({ virtue: initial, isAdmin, isCurrent, 
                   disabled={savingEssay}
                   className="flex items-center gap-1.5 bg-gold/20 text-gold border border-gold/40 font-mono text-xs px-4 py-2 rounded-pill min-h-[36px] disabled:opacity-50"
                 >
-                  <Check size={11} /> {savingEssay ? "Saving…" : "Save"}
+                  <Check size={13} /> {savingEssay ? "Saving…" : "Save"}
                 </button>
                 <button
                   onClick={cancelEssay}
                   className="flex items-center gap-1.5 text-dim font-mono text-xs px-3 py-2 rounded-pill border border-border min-h-[36px]"
                 >
-                  <X size={11} /> Cancel
+                  <X size={13} /> Cancel
                 </button>
               </div>
             </div>

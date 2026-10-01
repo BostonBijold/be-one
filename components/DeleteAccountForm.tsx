@@ -53,7 +53,7 @@ export default function DeleteAccountForm({ hasPassword }: Props) {
 
   return (
     <div className="bg-card rounded-card border border-burgundy/30 p-5 space-y-3">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-burgundy-light">
+      <p className="font-mono text-caption uppercase tracking-widest text-burgundy-light">
         Delete Account
       </p>
       <p className="font-body text-xs text-muted">

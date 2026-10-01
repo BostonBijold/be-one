@@ -71,7 +71,7 @@ export default function VirtueWalkthroughModal({ onClose }: Props) {
           {/* Header row */}
           <div className="flex items-start justify-between px-5 pt-2 pb-4 flex-shrink-0">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-gold mb-1">
+              <p className="font-mono text-caption uppercase tracking-widest text-gold mb-1">
                 Virtue System
               </p>
               <h2 className="font-heading text-xl text-text leading-snug">
@@ -113,7 +113,7 @@ export default function VirtueWalkthroughModal({ onClose }: Props) {
           <div className="px-5 pt-3 pb-6 flex-shrink-0 border-t border-border">
             <button
               onClick={handleDismiss}
-              className="w-full py-3.5 rounded-card bg-olive text-text font-body font-medium min-h-[44px]"
+              className="w-full py-3.5 rounded-card bg-olive text-bg font-body font-medium min-h-[44px]"
             >
               Got It
             </button>

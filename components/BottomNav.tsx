@@ -155,9 +155,9 @@ export default function BottomNav() {
             <button
               onClick={handleResumeTimer}
               aria-label={`Resume ${activeTimer.itemName}`}
-              className="absolute bottom-[94px] left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-card border border-amber/40 text-text font-mono text-[11px] pl-2.5 pr-3 py-1.5 rounded-pill shadow-lg max-w-[240px] active:opacity-90 transition-opacity"
+              className="absolute bottom-[94px] left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-card border border-amber/40 text-text font-mono text-[13px] pl-2.5 pr-3 py-1.5 rounded-pill shadow-lg max-w-[240px] active:opacity-90 transition-opacity"
             >
-              <HabitIcon name={activeTimer.itemIcon} size={13} className="text-amber flex-shrink-0" />
+              <HabitIcon name={activeTimer.itemIcon} size={15} className="text-amber flex-shrink-0" />
               <span className="truncate">{activeTimer.itemName}</span>
               <span className={`flex-shrink-0 ${isOverTarget ? "text-burgundy-light" : "text-amber"}`}>
                 {clockText}
@@ -199,8 +199,8 @@ export default function BottomNav() {
                       active ? "text-olive" : "text-dim hover:text-muted"
                     }`}
                   >
-                    <Icon size={20} strokeWidth={active ? 2 : 1.5} />
-                    <span className="font-mono text-[9px] uppercase tracking-widest leading-none">
+                    <Icon size={22} strokeWidth={active ? 2.25 : 1.75} />
+                    <span className="font-mono text-micro uppercase tracking-widest leading-none">
                       {label}
                     </span>
                   </Link>
@@ -220,8 +220,8 @@ export default function BottomNav() {
                       active ? "text-olive" : "text-dim hover:text-muted"
                     }`}
                   >
-                    <Icon size={20} strokeWidth={active ? 2 : 1.5} />
-                    <span className="font-mono text-[9px] uppercase tracking-widest leading-none">
+                    <Icon size={22} strokeWidth={active ? 2.25 : 1.75} />
+                    <span className="font-mono text-micro uppercase tracking-widest leading-none">
                       {label}
                     </span>
                   </Link>

@@ -26,24 +26,32 @@ The data layer must stay consistent for that future migration (MongoDB + REST AP
 ## Design System
 
 ### Colors
+Source of truth is `tailwind.config.ts` — this list mirrors it (readability pass, Oct 2026).
 ```
 bg-primary:     #18160f   (warm near-black — all backgrounds)
 bg-card:        #211f17   (card surfaces)
 bg-card-hover:  #2a2720
-text-primary:   #e8e0cc   (parchment white)
-text-muted:     #9a9280
-text-dim:       #5a5548
-olive:          #5a6b35   (primary action, streaks, done states)
-olive-light:    #7a9248
+text-primary:   #ece5d3   (parchment white, ≈12.5:1 on card)
+text-muted:     #b3ab96   (≈7:1 on card)
+text-dim:       #8e8673   (≈4.6:1 on card — the floor for any readable text)
+olive:          #7a9248   (primary action, streaks, done states)
+olive-light:    #8aaa55
 gold:           #c4a84a   (virtue accent, etymology highlights)
-tobacco:        #8b5a2b   (warnings, past-window states)
-burgundy:       #7a2e2e   (missed, over-timer states)
-burgundy-light: #a03a3a
+tobacco:        #b57e4b   (warnings, past-window states)
+burgundy:       #7a2e2e   (missed, over-timer states — FILL only)
+burgundy-light: #cf6a5f   (red as text/border)
 amber:          #c47a2a   (timer warning — 75% of target elapsed)
-blue-muted:     #4a7a9a   (goal/task layer — distinct from routine layer)
-border:         #2e2c22
-border-light:   #3d3b2e
+blue-muted:     #3f6a87   (goal/task layer FILL — cream text on it ≈4.6:1)
+blue-light:     #6390b0   (goal/task layer as text/border)
+border:         #38352a
+border-light:   #4d4a3c
 ```
+
+### Readability rules
+- Text must hit WCAG AA (≥4.5:1) against `card`. `dim` is the dimmest allowed text color — don't fade text further with `opacity-*` below ~60%.
+- Olive fills take **dark** text (`bg-olive text-bg`, ≈5.2:1); cream on olive is only ≈2.8:1. Blue fills use `bg-blue-muted text-text`.
+- Smallest font sizes are the `text-micro` (11px) and `text-caption` (12px) tokens — never `text-[9px]`/`text-[10px]`.
+- Inline icons next to text are ≥13px; habit icons on rows are 20px; bottom-nav icons are 22px.
 
 ### Typography
 - **Headings/Virtue names**: Playfair Display (serif, italic for virtue word)

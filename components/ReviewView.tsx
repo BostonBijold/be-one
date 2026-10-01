@@ -195,7 +195,7 @@ export default function ReviewView({
               className="flex-1 min-w-0 text-left bg-card border border-gold/25 rounded-card px-4 py-3 hover:bg-card-hover active:opacity-90 transition-colors flex items-center gap-3"
             >
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-0.5">
+                <p className="font-mono text-micro uppercase tracking-widest text-gold mb-0.5">
                   This Week&apos;s Virtue
                 </p>
                 <p className="font-heading text-base italic text-text leading-tight truncate">
@@ -206,14 +206,14 @@ export default function ReviewView({
             </Link>
             <button
               onClick={() => setManageOpen(true)}
-              className="font-mono text-[10px] text-dim hover:text-text px-3 py-3 rounded-card border border-border flex-shrink-0"
+              className="font-mono text-caption text-dim hover:text-text px-3 py-3 rounded-card border border-border flex-shrink-0"
             >
               Manage
             </button>
             {isAdmin && (
               <button
                 onClick={() => setQuotesOpen(true)}
-                className="font-mono text-[10px] text-dim hover:text-text px-3 py-3 rounded-card border border-border flex-shrink-0"
+                className="font-mono text-caption text-dim hover:text-text px-3 py-3 rounded-card border border-border flex-shrink-0"
               >
                 Quotes
               </button>
@@ -225,14 +225,14 @@ export default function ReviewView({
             {isAdmin && (
               <button
                 onClick={() => setQuotesOpen(true)}
-                className="font-mono text-[10px] text-dim hover:text-text px-3 py-2 rounded-card border border-border"
+                className="font-mono text-caption text-dim hover:text-text px-3 py-2 rounded-card border border-border"
               >
                 Quotes
               </button>
             )}
             <button
               onClick={() => setManageOpen(true)}
-              className="font-mono text-[10px] text-dim hover:text-text px-3 py-2 rounded-card border border-border"
+              className="font-mono text-caption text-dim hover:text-text px-3 py-2 rounded-card border border-border"
             >
               Manage
             </button>
@@ -256,7 +256,7 @@ export default function ReviewView({
             <VirtuesHowItWorks autoOpen={!virtueWalkthroughSeen} iconOnly />
           </div>
           {!virtueWalkthroughSeen && (
-            <p className="font-mono text-[10px] text-dim mt-2">
+            <p className="font-mono text-caption text-dim mt-2">
               Daily YES / NO, tap a virtue to read more
             </p>
           )}
@@ -295,7 +295,7 @@ export default function ReviewView({
               {days === 7 ? "This Week" : "This Month"}
             </h2>
             {summary && (
-              <p className="font-mono text-dim text-[10px] mt-0.5 tracking-wide">
+              <p className="font-mono text-dim text-caption mt-0.5 tracking-wide">
                 {fmtDateRange(summary.dates)}
               </p>
             )}
@@ -304,7 +304,7 @@ export default function ReviewView({
             <button
               onClick={() => setDays(7)}
               className={`font-mono text-xs px-3 py-1.5 rounded-pill transition-colors ${
-                days === 7 ? "bg-olive text-text" : "text-dim hover:text-muted"
+                days === 7 ? "bg-olive text-bg" : "text-dim hover:text-muted"
               }`}
             >
               7d
@@ -312,7 +312,7 @@ export default function ReviewView({
             <button
               onClick={() => setDays(30)}
               className={`font-mono text-xs px-3 py-1.5 rounded-pill transition-colors ${
-                days === 30 ? "bg-olive text-text" : "text-dim hover:text-muted"
+                days === 30 ? "bg-olive text-bg" : "text-dim hover:text-muted"
               }`}
             >
               30d
@@ -328,23 +328,23 @@ export default function ReviewView({
           <>
             <div className="flex items-center gap-3 mb-4">
               <span className="font-mono text-base font-bold text-text">{summary.overallPct}%</span>
-              <span className="font-mono text-[10px] text-dim">
+              <span className="font-mono text-caption text-dim">
                 {summary.checkInDays}/{summary.days} days checked in
               </span>
               {summary.strongest && (
-                <span className="font-mono text-[9px] text-olive ml-auto">
+                <span className="font-mono text-micro text-olive ml-auto">
                   ↑ {summary.strongest.virtueName}
                 </span>
               )}
               {summary.needsWork && summary.needsWork.virtueId !== summary.strongest?.virtueId && (
-                <span className="font-mono text-[9px] text-tobacco">
+                <span className="font-mono text-micro text-tobacco">
                   ↓ {summary.needsWork.virtueName}
                 </span>
               )}
             </div>
 
             {summary.checkInDays === 0 && (
-              <p className="font-mono text-[10px] text-dim mb-4">
+              <p className="font-mono text-caption text-dim mb-4">
                 Complete the Virtue Check-in in your Evening Routine to start tracking.
               </p>
             )}

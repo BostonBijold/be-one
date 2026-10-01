@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
         <h1 className="font-heading text-3xl text-text leading-tight mt-6 mb-1">
           Privacy Policy for Be One
         </h1>
-        <p className="font-mono text-[11px] text-dim mb-8">Last updated: {LAST_UPDATED}</p>
+        <p className="font-mono text-[13px] text-dim mb-8">Last updated: {LAST_UPDATED}</p>
 
         <div className="space-y-8 font-body text-sm text-muted leading-relaxed">
           <section>

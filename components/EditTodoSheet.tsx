@@ -51,7 +51,7 @@ export default function EditTodoSheet({ todo, onSave, onDelete, onClose }: Props
 
           <div className="overflow-y-auto flex-1 px-5 py-5 space-y-5">
             <div className="space-y-1.5">
-              <label className="font-mono text-[10px] text-dim uppercase tracking-widest">
+              <label className="font-mono text-caption text-dim uppercase tracking-widest">
                 Task name
               </label>
               <input
@@ -65,7 +65,7 @@ export default function EditTodoSheet({ todo, onSave, onDelete, onClose }: Props
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-mono text-[10px] text-dim uppercase tracking-widest">
+              <label className="font-mono text-caption text-dim uppercase tracking-widest">
                 Scheduled date
               </label>
               <input
@@ -78,7 +78,7 @@ export default function EditTodoSheet({ todo, onSave, onDelete, onClose }: Props
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-mono text-[10px] text-dim uppercase tracking-widest">
+              <label className="font-mono text-caption text-dim uppercase tracking-widest">
                 Estimated minutes <span className="text-dim normal-case font-body">(optional)</span>
               </label>
               <input

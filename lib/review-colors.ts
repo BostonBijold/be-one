@@ -8,7 +8,7 @@
 
 export const REVIEW_PALETTE = [
   "#c4a84a", // gold
-  "#4a7a9a", // blue-muted
+  "#6390b0", // blue-muted
   "#b5835a", // clay
   "#8f6f9a", // dusk mauve
   "#5f9488", // sage teal

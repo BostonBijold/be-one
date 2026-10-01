@@ -34,8 +34,8 @@ export default function TimelineBar({ segments, startLabel, endLabel, title, tot
     <div>
       {(title || totalLabel) && (
         <div className="flex items-baseline justify-between mb-1">
-          <span className="font-mono text-[9px] uppercase tracking-widest text-dim">{title}</span>
-          <span className="font-mono text-[11px] text-text">{totalLabel}</span>
+          <span className="font-mono text-micro uppercase tracking-widest text-dim">{title}</span>
+          <span className="font-mono text-[13px] text-text">{totalLabel}</span>
         </div>
       )}
       <div className={`flex overflow-hidden bg-border ${lg ? "h-[18px] rounded-md" : "h-2 rounded-full"}`}>
@@ -51,14 +51,14 @@ export default function TimelineBar({ segments, startLabel, endLabel, title, tot
             }}
           >
             {lg && seg.label && seg.pct >= MIN_LABEL_PCT && (
-              <span className="px-1 font-mono text-[9px] leading-none text-bg truncate">{seg.label}</span>
+              <span className="px-1 font-mono text-micro leading-none text-bg truncate">{seg.label}</span>
             )}
           </div>
         ))}
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className="font-mono text-[9px] text-dim">{startLabel}</span>
-        <span className="font-mono text-[9px] text-dim">{endLabel}</span>
+        <span className="font-mono text-micro text-dim">{startLabel}</span>
+        <span className="font-mono text-micro text-dim">{endLabel}</span>
       </div>
     </div>
   );

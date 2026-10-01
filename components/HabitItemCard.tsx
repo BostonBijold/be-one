@@ -72,7 +72,7 @@ export default function HabitItemCard({
               ✓ Done
             </span>
             {isTimed && actual != null && hasDuration && (
-              <span className="font-mono text-[10px] text-dim">
+              <span className="font-mono text-caption text-dim">
                 {fmtMins(actual)}
                 {variance !== null && variance !== 0 && (
                   <span className={variance > 0 ? " text-tobacco" : " text-gold"}>
@@ -82,14 +82,14 @@ export default function HabitItemCard({
               </span>
             )}
             {isStopwatch && actual != null && actual > 0 && (
-              <span className="font-mono text-[10px] text-dim">{fmtMins(actual)}</span>
+              <span className="font-mono text-caption text-dim">{fmtMins(actual)}</span>
             )}
           </div>
         </div>
         {/* Undo */}
         <button
           onClick={() => onStateChange(null)}
-          className="mt-2 ml-10 font-mono text-[9px] text-dim uppercase tracking-widest"
+          className="mt-2 ml-10 font-mono text-micro text-dim uppercase tracking-widest"
         >
           Undo
         </button>
@@ -125,7 +125,7 @@ export default function HabitItemCard({
         </div>
         <button
           onClick={() => onStateChange(null)}
-          className="mt-2 ml-10 font-mono text-[9px] text-dim uppercase tracking-widest"
+          className="mt-2 ml-10 font-mono text-micro text-dim uppercase tracking-widest"
         >
           Undo
         </button>
@@ -155,13 +155,13 @@ export default function HabitItemCard({
             />
             </div>
           </div>
-          <span className="font-mono text-xs text-blue-muted bg-blue-muted/10 px-2 py-0.5 rounded-pill flex-shrink-0">
+          <span className="font-mono text-xs text-blue-light bg-blue-muted/10 px-2 py-0.5 rounded-pill flex-shrink-0">
             ~ Rest
           </span>
         </div>
         <button
           onClick={() => onStateChange(null)}
-          className="mt-2 ml-10 font-mono text-[9px] text-dim uppercase tracking-widest"
+          className="mt-2 ml-10 font-mono text-micro text-dim uppercase tracking-widest"
         >
           Undo
         </button>
@@ -201,7 +201,7 @@ export default function HabitItemCard({
         </div>
         <button
           onClick={() => onStateChange(null)}
-          className="mt-2 ml-10 font-mono text-[9px] text-dim uppercase tracking-widest"
+          className="mt-2 ml-10 font-mono text-micro text-dim uppercase tracking-widest"
         >
           Undo
         </button>
@@ -329,7 +329,7 @@ export default function HabitItemCard({
                   onChange={(e) => setBackMins(e.target.value)}
                   className="w-8 bg-transparent font-mono text-xs text-text outline-none text-right"
                 />
-                <span className="font-mono text-dim text-[10px]">m</span>
+                <span className="font-mono text-dim text-caption">m</span>
               </div>
             )}
           </div>
@@ -340,7 +340,7 @@ export default function HabitItemCard({
       {!showSkips ? (
         <button
           onClick={() => setShowSkips(true)}
-          className="ml-10 font-mono text-[9px] text-dim uppercase tracking-widest"
+          className="ml-10 font-mono text-micro text-dim uppercase tracking-widest"
         >
           Skip…
         </button>
@@ -354,13 +354,13 @@ export default function HabitItemCard({
           </button>
           <button
             onClick={() => { onStateChange("rest", { isBackEntry }); setShowSkips(false); }}
-            className="flex-1 border border-blue-muted/30 text-blue-muted font-body text-xs py-2 rounded-card min-h-[36px]"
+            className="flex-1 border border-blue-muted/30 text-blue-light font-body text-xs py-2 rounded-card min-h-[36px]"
           >
             ~ Rest
           </button>
           <button
             onClick={() => setShowSkips(false)}
-            className="px-3 text-dim font-mono text-[10px] min-h-[36px]"
+            className="px-3 text-dim font-mono text-caption min-h-[36px]"
           >
             ✕
           </button>
