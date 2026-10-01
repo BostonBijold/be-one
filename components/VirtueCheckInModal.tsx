@@ -2,17 +2,22 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { X, Check } from "lucide-react";
-import { personalStackOrders } from "@/lib/virtue-dates";
+import { personalStackOrders, currentVirtueOrder } from "@/lib/virtue-dates";
+import VirtueSummary from "@/components/VirtueSummary";
 
 interface Virtue {
   _id: string;
   name: string;
   displayName: string;
   tagline: string;
+  essay: string;
   order: number;
 }
 
 interface Props {
+  // Only a pre-load fallback for the focus virtue — the modal resolves the
+  // real one itself from `date` + the fetched philosophy (see focusVirtue),
+  // so its three callers can't disagree about which virtue is this week's.
   thisWeekVirtue: { name: string; displayName: string; tagline: string; order?: number } | null;
   date: string; // YYYY-MM-DD being checked in
   onDone: (actualMinutes: number) => void;
@@ -40,20 +45,34 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
     });
   }, []);
 
+  // This week's focus virtue for the date being checked in, within the
+  // selected philosophy (GET /api/virtues is scoped server-side). Same
+  // rotation math the server pages use for their banner, just keyed to
+  // `date` rather than "now," so a yesterday check-in across a week boundary
+  // shows the virtue that day actually belonged to.
+  const focusOrder = allVirtues.length > 0
+    ? currentVirtueOrder(new Date(date + "T12:00:00"), allVirtues.length)
+    : thisWeekVirtue?.order ?? null;
+  const focusVirtue = allVirtues.find((v) => v.order === focusOrder) ?? null;
+
   // Progressive stacking: only the virtues within the caller's personal
-  // weeks-active window appear here — never affects `thisWeekVirtue`, the
-  // shared highlight shown in the header above, which stays identical for
-  // every user. Falls back to the full list if stack info isn't available
-  // (e.g. thisWeekVirtue.order missing) rather than blocking check-in.
+  // weeks-active window appear here — never affects the focus virtue, the
+  // shared highlight shown at the top, which stays identical for every
+  // user. Falls back to the full list if stack info isn't available rather
+  // than blocking check-in.
   const virtues = useMemo(() => {
-    if (stackSize == null || thisWeekVirtue?.order == null || allVirtues.length === 0) {
+    if (stackSize == null || focusOrder == null || allVirtues.length === 0) {
       return allVirtues;
     }
     const orders = new Set(
-      personalStackOrders(thisWeekVirtue.order, stackSize, allVirtues.length)
+      personalStackOrders(focusOrder, stackSize, allVirtues.length)
     );
     return allVirtues.filter((v) => orders.has(v.order));
-  }, [allVirtues, stackSize, thisWeekVirtue]);
+  }, [allVirtues, stackSize, focusOrder]);
+
+  const dateLabel = new Date(date + "T12:00:00").toLocaleDateString("en-US", {
+    weekday: "long", month: "short", day: "numeric",
+  });
 
   const answeredCount = Object.keys(answers).length;
   const allAnswered = !loading && virtues.length > 0 && answeredCount === virtues.length;
@@ -109,18 +128,12 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
                 <p className="font-mono text-[9px] uppercase tracking-widest text-gold mb-1">
                   Daily Check-in
                 </p>
-                <h2 className="font-heading text-lg italic text-text leading-tight">
-                  {thisWeekVirtue?.displayName ?? "Virtue Check-in"}
-                </h2>
-                {thisWeekVirtue?.tagline && (
-                  <p className="font-mono text-[10px] text-muted mt-1">
-                    {thisWeekVirtue.tagline}
-                  </p>
-                )}
+                <h2 className="font-heading text-lg text-text leading-tight">{dateLabel}</h2>
               </div>
               <button
                 onClick={onClose}
-                className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-dim"
+                className="flex-shrink-0 w-11 h-11 -mr-2 flex items-center justify-center text-dim"
+                aria-label="Close check-in"
               >
                 <X size={18} />
               </button>
@@ -143,6 +156,16 @@ export default function VirtueCheckInModal({ thisWeekVirtue, date, onDone, onClo
 
           {/* Virtue list */}
           <div className="flex-1 overflow-y-auto px-3 py-2">
+            {/* This week's focus — a quick reminder of what the virtue means
+                before answering; essay collapsed behind "Read more". */}
+            {(focusVirtue || thisWeekVirtue) && (
+              <div className="px-1 pt-1 pb-3">
+                <VirtueSummary
+                  eyebrow="This week's focus"
+                  virtue={focusVirtue ?? { displayName: thisWeekVirtue!.displayName, tagline: thisWeekVirtue!.tagline }}
+                />
+              </div>
+            )}
             {loading && (
               <p className="text-dim font-mono text-xs text-center py-8">Loading virtues…</p>
             )}

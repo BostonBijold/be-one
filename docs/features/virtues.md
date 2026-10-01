@@ -71,9 +71,12 @@ A **"Manage"** button sits next to the "This Week's Virtue" banner at all times 
 
 ## Daily check-in
 
-Two entry points, both mounting the same `components/VirtueCheckInModal.tsx`:
+Three entry points, all mounting the same `components/VirtueCheckInModal.tsx`:
 1. **Inline from the Routines page** — tapping the "Virtue Check-in" special `RoutineItem` (`itemType: "virtue_checkin"`, see [routines.md](routines.md#item-types)) sets local state in `RoutinesView.tsx` and opens the modal without navigating away.
-2. **From `/virtues` directly** — the "Today's Check-in" button in `ReviewView.tsx`.
+2. **Inside a Routine Session** — reaching that same item during "Start Routine" (`RoutineSession.tsx`'s special-item handoff).
+3. **From `/virtues` directly** — the "Today's Check-in" button in `ReviewView.tsx`.
+
+**This week's focus, at the top.** Above the YES/NO list, the modal shows a compact reminder of the week's focus virtue (`components/VirtueSummary.tsx`): `displayName`, `tagline`, and the `essay` behind a collapsed-by-default "Read more". It's part of the scroll area, so the user scrolls straight down into the rows. The modal **resolves the focus virtue itself** as `currentVirtueOrder(date, virtues.length)` over its own `GET /api/virtues` result (the selected philosophy's active virtues, which already include `tagline`/`essay`/`displayName`), rather than trusting the `thisWeekVirtue` prop. That way the three callers can't drift, and a yesterday check-in across a Monday boundary shows the virtue that day belonged to. The prop is now only a pre-load fallback. The same derived order also anchors progressive stacking (`personalStackOrders`), so the focus card and the stacked list always agree. Previously stacking used the prop's server-computed "today" order. An empty tagline or essay hides that part rather than rendering an empty block. The header now shows "Daily Check-in" plus the date being checked in, since the virtue name moved into the card.
 
 The modal fetches the *selected philosophy's* active virtues (`GET /api/virtues`, scoped server-side to `User.selectedPhilosophyId`) and shows one YES/NO row per virtue — every virtue in the philosophy, every day, not just this week's, matching Franklin's "track all daily, focus on one" framing. Every virtue must be answered before Submit enables (`answeredCount === virtues.length` — already dynamic, not hardcoded, so it needed no change for this feature). `POST /api/virtue-checkins` resolves the caller's `philosophyId` server-side, `400`s if they somehow have none selected (defense-in-depth — the UI can't reach this state), and upserts the day's document with `philosophyId` stamped in.
 
@@ -83,11 +86,17 @@ Completing the modal calls `POST /api/routine-logs` for the `virtue_checkin` ite
 
 ## Weekly review
 
-Triggered from `RoutinesView.tsx`'s "Weekly Review" special `RoutineItem` (`itemType: "weekly_review"`) or the "Start This Week's Review" button on `/virtues` — both open `components/WeeklyReviewModal.tsx` inside `ReviewView`. Unlike the daily check-in, there's no path that opens this modal without going through `/virtues`.
+Triggered from `RoutinesView.tsx`'s "Weekly Review" special `RoutineItem` (`itemType: "weekly_review"`), which navigates to `/virtues?mode=weekly`, from the "Start This Week's Review" button on `/virtues` (both open `components/WeeklyReviewModal.tsx` inside `ReviewView`), or from reaching that item inside a Routine Session, where `RoutineSession.tsx` mounts the modal directly.
 
 **Sunday-only gating is client-UI-only, in exactly one place**: `ReviewView.tsx` computes `isSunday` from the server-passed (UTC) date and disables the button on other days. `WeeklyReviewModal.tsx` itself has a prop comment claiming its `date` "must be Sunday" but enforces nothing — it renders for whatever date it's given. Nothing server-side checks day-of-week at all.
 
-Content: fetches `GET /api/virtue-checkins?weekStart=...` (scoped to the selected philosophy) for the ISO week containing the given date, tallies yes/total per virtue client-side, shows a strongest/needs-work pair, a full per-virtue score bar (a separate local 3-band color scale — `≥70% olive / ≥40% amber / else burgundy` — not `lib/routine-progress.ts`'s pacing math), and a "next week's virtue" teaser computed as `((nextWeekNum - 1) % virtueCount) + 1` — `virtueCount` is now a required prop threaded down from the page (`ReviewView` → `WeeklyReviewModal`), replacing the old hardcoded `% 13`. Confirming calls `POST /api/routine-logs` for the `weekly_review` item with a **hardcoded `actualMinutes: 10`**, same caveat as the daily check-in.
+Content is a **three-step sequence**, one page at a time inside the same bottom sheet. Each step has a single primary button (Enter does the same), plus a ‹ back button and step dots in the header:
+
+1. **Recap: "This past week's focus."** The virtue of the ISO week containing `date`. Weeks are Monday-anchored, so on Sunday that's the week that's ending: `currentVirtueOrder(date, count)`. Shown with `VirtueSummary` (`displayName`, `tagline`, essay behind "Read more"). A lightweight intro, not a gate: "See how you did" moves on.
+2. **Results.** `GET /api/virtue-checkins?weekStart=...` (scoped to the selected philosophy) for that week, tallied yes/total per virtue client-side, then a strongest/needs-work pair and a full per-virtue score bar (a separate local 3-band color scale — `≥70% olive / ≥40% amber / else burgundy` — not `lib/routine-progress.ts`'s pacing math). With zero check-ins it shows "No check-ins recorded this week." and the other two steps still render normally. Previously, zero check-ins also hid the next-week teaser.
+3. **Reveal: next week's focus.** Order `((nextWeekNum - 1) % count) + 1`, the existing calculation kept as-is, again with full `VirtueSummary` content, replacing the old name/tagline/etymology teaser. In a one-virtue philosophy, current and next are the same virtue, and the eyebrow reads "Next week — the same focus continues." **"Got it. Start next week."** here is what logs the item: `POST /api/routine-logs` for `weekly_review` with a **hardcoded `actualMinutes: 10`**, same caveat as the daily check-in.
+
+**Where the virtue objects come from:** the modal fetches `GET /api/virtues` once (the selected philosophy's active virtues, already including `tagline`/`essay`/`displayName`, so no API change was needed) and picks both the recap and the reveal from it by order. The `currentVirtue` prop is only a fallback for the recap until that fetch lands. `count` is the `virtueCount` prop (required, threaded down from the page via `ReviewView` → `WeeklyReviewModal`, replacing the old hardcoded `% 13`), falling back to the fetched list's length when a caller passes `0`. `RoutineSession.tsx` can do that when its `thisWeekVirtue` is missing. An empty tagline or essay hides that part of the block. If no virtue matches an order, the reveal falls back to "Virtue #N begins Monday."
 
 ## Virtue detail — two separate, non-identical UIs
 
@@ -132,8 +141,9 @@ Run manually, exactly once per environment (`node --env-file=.env.local scripts/
 - `app/(app)/virtues/[slug]/page.tsx` → `components/VirtueDetailView.tsx` — full-page detail, admin essay+etymology editing, philosophy-aware "This Week" pill.
 - `app/(app)/review/page.tsx` — dead-URL redirect shim to `/virtues`.
 - `components/VirtueSheet.tsx` — the other virtue-detail UI (bottom sheet from the Routines page), essay-only.
-- `components/VirtueCheckInModal.tsx` — the daily check-in modal; filters `GET /api/virtues`' result down to the caller's personal stack via `GET /api/virtue-stack` + `personalStackOrders`.
-- `components/WeeklyReviewModal.tsx` — the Sunday summary modal (client-gated only; `virtueCount` now a required prop; still tallies every philosophy virtue, not just the caller's stack — see "Known follow-up" above).
+- `components/VirtueCheckInModal.tsx` — the daily check-in modal; resolves this week's focus virtue from `date` + `GET /api/virtues` and shows it at the top, then filters the list down to the caller's personal stack via `GET /api/virtue-stack` + `personalStackOrders`.
+- `components/WeeklyReviewModal.tsx` — the Sunday review modal: recap → results → next-week reveal (client-gated only; `virtueCount` a required prop; still tallies every philosophy virtue, not just the caller's stack — see "Known follow-up" above).
+- `components/VirtueSummary.tsx` — shared read-only virtue reminder (`displayName`, `tagline`, collapsible `essay`) used by both modals above; separate from `VirtueSheet`/`VirtueDetailView`, which keep their own (editable) essay displays.
 - `components/PhilosophyManageSheet.tsx` — the marketplace grid (`PhilosophyMarketplaceInline`, used inline when no philosophy is selected) and the "Manage" overlay sheet (default export), including the admin virtue editor, the switch-confirmation `confirm()`, and the "Reset Virtue Progress" button (sheet variant only).
 - `components/VirtuesHowItWorks.tsx` / `components/VirtueWalkthroughModal.tsx` — onboarding explainer, content sourced from `virtue-system-app-medium.md`.
 
