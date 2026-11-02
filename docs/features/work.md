@@ -82,15 +82,31 @@ This takes the category-editing part of Phase 2 early, apart from reordering. Th
 
 **Editing.** Tapping a Today row opens a sheet for label, start, end, and notes, and running sessions have no end field. Only changed fields are sent, because the time inputs have minute precision and resending an untouched time would drop its seconds. Changing a label also changes what the session counts as: it takes on the category with that exact label, or becomes free-text and not a break if none matches. Delete needs a confirm step.
 
-**Add past block.** Category or typed label, date, start, and end, created with `source: "manual"`. The form covers a single calendar day, so a block crossing midnight needs two entries.
+**Add past block.** Category or typed label, start, and end, created with `source: "manual"`. The form only adds blocks to today, because there is no view of other days yet and a block added for one would disappear. The API still accepts any past date.
 
 **Validation.** End times can't be in the future, end must be after start, and ranges can't overlap another session. A running session counts as ending now, and the check covers all sessions, not just the displayed day. There is no transaction around the check and the write, so two simultaneous edits could still overlap. That's acceptable for one person's own data.
 
 ## Layout
 
-The work layout provides its own scroll container, because `app/globals.css` fixes `body` with `overflow: hidden` and the app's usual scroll container belongs to `app/(app)/layout.tsx`. At `lg` and up there are two panes with a sticky timer, a deliberate exception to the app's 420px maximum width. Below that, it stacks within `max-w-mobile`.
+The work layout provides its own scroll container, because `app/globals.css` fixes `body` with `overflow: hidden` and the app's usual scroll container belongs to `app/(app)/layout.tsx`. It also sets `color-scheme: dark`, which gives native inputs, pickers, checkboxes, and scrollbars their dark versions.
 
-Category color classes are complete literals in `components/work/CategoryGrid.tsx`, since Tailwind can't detect constructed names. Tailwind doesn't scan `lib/`, so class names can't live in `lib/work/`.
+At `lg` and up, the page fills the window as two full-height panes, a deliberate exception to the app's 420px maximum width:
+- **Left:** the session name, ring, Stop, notes, and Today. Once Today's list runs out of room it scrolls on its own with its totals pinned below it, and it scrolls to the newest row when one is added.
+- **Right:** the one-off input and Edit at the top, then the buttons in four columns, scrolling on their own. Adding buttons never moves the timer or Today.
+
+Everything is centered on the screen rather than aligned to the top, at every size, whenever it fits. In two panes, each column centers on its own, so the left and right content won't line up exactly. Content that doesn't fit still scrolls from its top. A short last row of buttons is centered too, which is why the buttons use a wrapping flex layout rather than a CSS grid.
+
+A browser on a tablet is the main use, so the two tablet orientations get the most care:
+- **Landscape** (usually `lg` and up) uses the two panes above.
+- **Portrait** (`md`, up to 1023px) stacks timer, buttons, then Today at full width, with four columns of buttons. The ring sits beside the session name and Stop, which keeps the timer row short and puts the buttons in the middle of the screen.
+
+Phones stack the same way within `max-w-mobile`, with the ring above its controls and three columns of buttons. The stacking order is the DOM order, and CSS grid placement rearranges it at wider sizes.
+
+The ring is 288px at `lg` when the window is at least 800px tall, and 240px when shorter, so Today keeps room on small laptops. Notes stay collapsed behind "+ Add note" unless the session already has some.
+
+**Buttons.** Each is a large touch target (88px tall from `md`, 76px on phones) with its label centered, a color bar on its left edge, and today's time for that category once it reaches a minute, counting only sessions still linked to the category. The running button fills with its color and takes dark text. Hover styles only apply where the device has a real pointer, since on touch screens they stick to whatever was tapped last, and buttons block long-press text selection and double-tap zoom. Those classes are complete literals in `components/work/categoryColors.ts`, since Tailwind can't detect constructed names. Tailwind doesn't scan `lib/`, so class names can't live in `lib/work/`.
+
+Times in the Today list follow the browser's locale, as the native time inputs do.
 
 ## Files
 
@@ -101,7 +117,7 @@ Category color classes are complete literals in `components/work/CategoryGrid.ts
 | `components/work/WorkTimer.tsx` | Ring and clock |
 | `components/work/CategoryGrid.tsx` | Category tiles, edit mode, and "One-off session" |
 | `components/work/CategorySheet.tsx`, `ArchivedCategoriesSheet.tsx` | Create, edit, archive, and restore buttons |
-| `components/work/categoryColors.ts` | Literal color classes and the color picker's options |
+| `components/work/categoryColors.ts` | Literal color bar and fill classes, and the color picker's options |
 | `components/work/TodayPanel.tsx` | Today's list and totals |
 | `components/work/EditSessionSheet.tsx`, `AddPastBlockSheet.tsx`, `ForgottenTimerSheet.tsx` | Sheets |
 | `components/work/WorkSheet.tsx` | Bottom-sheet shell and shared input classes |
@@ -115,5 +131,6 @@ Category color classes are complete literals in `components/work/CategoryGrid.ts
 
 ## Known gaps
 
+- **No view of other days.** The list only shows today, so a session that started yesterday can't be seen or edited once it stops, and neither can one whose start is edited onto another day. Planned alongside reports.
 - **Account deletion** does not purge work collections, because the isolation rules forbid editing `DELETE /api/user/delete-account`. Add them, and add work data to `app/privacy/page.tsx`, before opening `/work` to non-admins.
 - **No automated tests.** The repo has no test runner, and adding one would break the isolation rules, so Phase 1 was verified with throwaway scripts that are not checked in.

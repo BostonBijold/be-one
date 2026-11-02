@@ -9,5 +9,6 @@ export default async function WorkLayout({ children }: { children: React.ReactNo
 
   // Own scroll container: globals.css fixes body with overflow hidden, and the
   // one the rest of the app scrolls in belongs to app/(app)/layout.tsx.
-  return <div className="h-full overflow-y-auto overscroll-none">{children}</div>;
+  // color-scheme gives native controls and scrollbars their dark versions.
+  return <div className="h-full overflow-y-auto overscroll-none [color-scheme:dark]">{children}</div>;
 }

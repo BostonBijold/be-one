@@ -41,7 +41,7 @@ export default function WorkTimer({
         : "elapsed";
 
   return (
-    <div className="relative w-56 h-56 mx-auto">
+    <div className="relative w-56 h-56 md:w-52 md:h-52 lg:w-60 lg:h-60 [@media(min-width:1024px)_and_(min-height:800px)]:w-72 [@media(min-width:1024px)_and_(min-height:800px)]:h-72 mx-auto">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200" aria-hidden="true">
         <circle cx="100" cy="100" r={R} fill="none" strokeWidth="10" className="stroke-border" />
         {session && (
@@ -69,7 +69,7 @@ export default function WorkTimer({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
         <span
-          className={`font-mono text-[2rem] font-semibold leading-none ${isOver ? "text-burgundy-light" : "text-text"}`}
+          className={`font-mono text-[2rem] lg:text-[2.25rem] [@media(min-width:1024px)_and_(min-height:800px)]:text-[2.75rem] font-semibold leading-none ${isOver ? "text-burgundy-light" : "text-text"}`}
           role="timer"
         >
           {isOver && targetSeconds !== null ? formatOver(elapsed - targetSeconds) : formatClock(elapsed)}

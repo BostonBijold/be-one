@@ -1,3 +1,5 @@
+import type { WorkSessionDTO } from "@/lib/work/types";
+
 function pad(n: number) {
   return n.toString().padStart(2, "0");
 }
@@ -25,6 +27,11 @@ export function elapsedSeconds(startTime: string, nowMs: number) {
   return Math.max(0, Math.floor((nowMs - new Date(startTime).getTime()) / 1000));
 }
 
+// A running session's duration is live; stopped sessions use the server's value.
+export function sessionSeconds(session: WorkSessionDTO, nowMs: number) {
+  return session.endTime ? (session.durationSeconds ?? 0) : elapsedSeconds(session.startTime, nowMs);
+}
+
 export function formatClock(seconds: number) {
   return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor((seconds % 3600) / 60))}:${pad(seconds % 60)}`;
 }
@@ -49,8 +56,9 @@ export function formatTotal(seconds: number) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
+// Follows the browser's locale, as the native time inputs in the sheets do.
 export function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 // Value format for <input type="datetime-local">, in local time.

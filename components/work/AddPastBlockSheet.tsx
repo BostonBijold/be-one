@@ -19,14 +19,16 @@ export default function AddPastBlockSheet({
 }) {
   const [categoryChoice, setCategoryChoice] = useState(categories[0]?._id ?? CUSTOM);
   const [label, setLabel] = useState("");
-  const [date, setDate] = useState(() => localDayKey(new Date()));
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function save() {
-    if (!date || !start || !end) return setError("Enter a date, start time, and end time.");
+    if (!start || !end) return setError("Enter a start time and end time.");
+    // Today only for now: there's no view of other days yet, so a block added
+    // for one would disappear and couldn't be edited.
+    const date = localDayKey(new Date());
     setSaving(true);
     setError(null);
     try {
@@ -72,16 +74,6 @@ export default function AddPastBlockSheet({
           />
         </div>
       )}
-      <div>
-        <label htmlFor="work-past-date" className={workFieldLabelClass}>Date</label>
-        <input
-          id="work-past-date"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className={`${workInputClass} font-mono`}
-        />
-      </div>
       <div className="flex gap-3">
         <div className="flex-1 min-w-0">
           <label htmlFor="work-past-start" className={workFieldLabelClass}>Start</label>

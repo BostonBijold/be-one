@@ -1,14 +1,16 @@
 import type { CategoryColor } from "@/lib/work/types";
 
 // Complete literal class names: Tailwind can't detect a constructed `bg-${color}`.
-export const COLOR_CLASSES: Record<CategoryColor, { bar: string; activeBorder: string }> = {
-  olive: { bar: "bg-olive", activeBorder: "border-olive" },
-  "olive-light": { bar: "bg-olive-light", activeBorder: "border-olive-light" },
-  gold: { bar: "bg-gold", activeBorder: "border-gold" },
-  muted: { bar: "bg-muted", activeBorder: "border-muted" },
-  dim: { bar: "bg-dim", activeBorder: "border-dim" },
+// Fills take dark text, which clears WCAG AA on all of them; neutral's fill is
+// too dark for that, so it takes light text.
+export const COLOR_CLASSES: Record<CategoryColor, { bar: string; activeFill: string }> = {
+  olive: { bar: "bg-olive", activeFill: "bg-olive text-bg" },
+  "olive-light": { bar: "bg-olive-light", activeFill: "bg-olive-light text-bg" },
+  gold: { bar: "bg-gold", activeFill: "bg-gold text-bg" },
+  muted: { bar: "bg-muted", activeFill: "bg-muted text-bg" },
+  dim: { bar: "bg-dim", activeFill: "bg-dim text-bg" },
 };
-export const NEUTRAL_CLASSES = { bar: "bg-border-light", activeBorder: "border-muted" };
+export const NEUTRAL_CLASSES = { bar: "bg-border-light", activeFill: "bg-border-light text-text" };
 
 export const COLOR_OPTIONS: Array<{ value: CategoryColor | null; name: string }> = [
   { value: null, name: "Neutral" },
