@@ -46,11 +46,23 @@ Two work-only collections hold everything. No existing collection is touched.
 
 `GET /api/work/categories` seeds eight defaults for a user with no categories: Lunch and Break (`isBreak`, with 30- and 15-minute targets), Email, Desk Tickets, Dash, Project Management, Meetings, and Research. `lib/work/seed.ts` upserts by the unique `{ userId, label }` index rather than checking then creating, so concurrent first loads can't create duplicates.
 
-Categories are fixed in Phase 1. Editing arrives in Phase 2, where renames must keep labels unique per user or that index must change.
+The seed only runs for a user with no category rows at all, so archiving every button doesn't bring the defaults back.
+
+### Managing categories
+
+The grid grows with the list: there is no limit on buttons, and a "New" tile always comes last. "Edit" in the Categories header switches tiles from starting a session to opening a sheet for label, color, target minutes, and whether the button counts as a break.
+
+- **Archive, never delete.** Archiving hides a button and keeps its row. "Archived (n)", shown while editing, lists them with a Restore action, and a restored button returns to its old position.
+- **Changes apply to new sessions.** Past and running sessions keep the label and break flag they were created with, so renaming a button doesn't rewrite history. A running session's ring does follow an edited target.
+- **Archiving a running button** leaves the session running with its target intact.
+- **Labels are unique per user,** ignoring case and including archived buttons. Reusing an archived label returns a message pointing at Restore.
+- **New buttons go last.** There is no way to reorder buttons yet.
+
+This takes the category-editing part of Phase 2 early, apart from reordering. The free-text input is now labeled "One-off session" rather than "Add your own", since "New" is what adds a button.
 
 ## Behavior
 
-**Starting and switching.** Tapping a category or pressing Enter in "Add your own" starts a session. If one is running, the same server call stops it, using one timestamp for both so they touch without overlapping. Tapping the category already running does nothing. If two requests race, the database index allows only one running session, the loser retries once, and a second loss returns `409`.
+**Starting and switching.** Tapping a category or pressing Enter in "One-off session" starts a session. If one is running, the same server call stops it, using one timestamp for both so they touch without overlapping. Tapping the category already running does nothing. If two requests race, the database index allows only one running session, the loser retries once, and a second loss returns `409`.
 
 **The clock.** `startTime` from the server is the source of truth, and elapsed time is always `now - startTime`, clamped at 0. The 1-second tick is cosmetic, so throttling can't lose time. The display recomputes on `visibilitychange`, `focus`, and `pageshow`, and those also re-fetch, so changes from another tab appear on return. A tab left open past midnight rolls over to the new day.
 
@@ -87,7 +99,9 @@ Category color classes are complete literals in `components/work/CategoryGrid.ts
 | `app/(work)/work/layout.tsx`, `page.tsx` | Access gate, scroll container, page entry |
 | `components/work/WorkTracker.tsx` | Page composition and sheet state |
 | `components/work/WorkTimer.tsx` | Ring and clock |
-| `components/work/CategoryGrid.tsx` | Category tiles and "Add your own" |
+| `components/work/CategoryGrid.tsx` | Category tiles, edit mode, and "One-off session" |
+| `components/work/CategorySheet.tsx`, `ArchivedCategoriesSheet.tsx` | Create, edit, archive, and restore buttons |
+| `components/work/categoryColors.ts` | Literal color classes and the color picker's options |
 | `components/work/TodayPanel.tsx` | Today's list and totals |
 | `components/work/EditSessionSheet.tsx`, `AddPastBlockSheet.tsx`, `ForgottenTimerSheet.tsx` | Sheets |
 | `components/work/WorkSheet.tsx` | Bottom-sheet shell and shared input classes |
@@ -96,6 +110,7 @@ Category color classes are complete literals in `components/work/CategoryGrid.ts
 | `lib/work/guard.ts` | Access check |
 | `lib/work/route.ts` | Handler wrapper: access, DB connection, error responses |
 | `lib/work/sessions.ts` | Server validation, overlap check, conditional stop, serialization |
+| `lib/work/categories.ts` | Server validation, label uniqueness check, serialization for categories |
 | `lib/work/seed.ts` | Default categories |
 
 ## Known gaps

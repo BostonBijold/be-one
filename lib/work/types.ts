@@ -9,6 +9,7 @@ export interface WorkCategoryDTO {
   order: number;
   isBreak: boolean;
   defaultDurationMin: number | null;
+  archived: boolean;
 }
 
 export interface WorkSessionDTO {

@@ -13,11 +13,12 @@ import { useWorkTracker } from "@/lib/work/useWorkTracker";
 
 export default function WorkTracker() {
   const tracker = useWorkTracker();
-  const { active, categories, now } = tracker;
+  const { active, allCategories, now } = tracker;
   const [editing, setEditing] = useState<WorkSessionDTO | null>(null);
   const [addingPast, setAddingPast] = useState(false);
 
-  const activeCategory = active ? categories.find((c) => c._id === active.categoryId) : undefined;
+  const categories = allCategories.filter((c) => !c.archived);
+  const activeCategory = active ? allCategories.find((c) => c._id === active.categoryId) : undefined;
 
   function openEdit(session: WorkSessionDTO) {
     // A running row's notes may be ahead of the list by an unsaved draft.
@@ -70,9 +71,10 @@ export default function WorkTracker() {
         ) : (
           <>
             <CategoryGrid
-              categories={categories}
+              categories={allCategories}
               activeCategoryId={active?.categoryId ?? null}
               onStart={tracker.start}
+              onChanged={tracker.refresh}
             />
             <TodayPanel
               sessions={tracker.sessions}

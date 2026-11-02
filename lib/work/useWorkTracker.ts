@@ -21,7 +21,8 @@ function isForgotten(session: WorkSessionDTO, nowMs: number) {
 }
 
 export function useWorkTracker() {
-  const [categories, setCategories] = useState<WorkCategoryDTO[]>([]);
+  // Includes archived categories: a session running on one still needs its target.
+  const [allCategories, setAllCategories] = useState<WorkCategoryDTO[]>([]);
   const [sessions, setSessions] = useState<WorkSessionDTO[]>([]);
   const [active, setActive] = useState<WorkSessionDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,11 +73,13 @@ export function useWorkTracker() {
     const { from, to } = localDayRange(new Date());
     dayKeyRef.current = localDayKey(new Date());
     try {
-      const [nextActive, nextSessions] = await Promise.all([
+      const [nextCategories, nextActive, nextSessions] = await Promise.all([
+        workApi<WorkCategoryDTO[]>("/categories?includeArchived=true"),
         workApi<WorkSessionDTO | null>("/sessions/active"),
         workApi<WorkSessionDTO[]>(`/sessions?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`),
       ]);
       if (refreshId !== refreshIdRef.current) return; // a newer refresh supersedes this one
+      setAllCategories(nextCategories);
       setActive(nextActive);
       setSessions(nextSessions);
       if (nextActive?._id !== notesSessionIdRef.current || !notesDirtyRef.current) {
@@ -98,12 +101,6 @@ export function useWorkTracker() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const cats = await workApi<WorkCategoryDTO[]>("/categories");
-        if (!cancelled) setCategories(cats);
-      } catch (err) {
-        if (!cancelled) setError((err as Error).message);
-      }
       await refresh();
       if (!cancelled) setLoading(false);
     })();
@@ -259,7 +256,7 @@ export function useWorkTracker() {
   }
 
   return {
-    categories,
+    allCategories,
     sessions,
     active,
     loading,

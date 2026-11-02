@@ -27,13 +27,30 @@ Covers `/api/work/**`, the backend for [`features/work.md`](../features/work.md)
 
 ## `GET /api/work/categories`
 
-Seeds the eight defaults if the user has no categories, then returns the non-archived ones sorted by `order`:
+Seeds the eight defaults if the user has no category rows, then returns the non-archived ones sorted by `order`. Add `?includeArchived=true` to include archived ones.
 
 ```ts
-Array<{ _id, label, color: "olive" | "olive-light" | "gold" | "muted" | "dim" | null, order, isBreak, defaultDurationMin: number | null }>
+Array<{ _id, label, color: "olive" | "olive-light" | "gold" | "muted" | "dim" | null, order, isBreak, defaultDurationMin: number | null, archived: boolean }>
 ```
 
-`color` is a Tailwind token name, and `null` means neutral. Creating and editing categories is Phase 2.
+`color` is a Tailwind token name, and `null` means neutral.
+
+## `POST /api/work/categories`
+
+Body: `{ label, color?, isBreak?, defaultDurationMin? }`. Adds a category after all existing ones, archived included. There is no limit on how many a user can have.
+
+`201`: the category.
+
+| Status | When |
+|---|---|
+| `400` | Invalid body; empty or over-80-character label; unknown color; `defaultDurationMin` not a whole number from 1 to 1440 |
+| `409` | The label is taken, ignoring case and including archived categories. The message says if it's archived |
+
+## `PATCH /api/work/categories/:id`
+
+Body: any of `{ label, color, isBreak, defaultDurationMin, archived }`. Categories are archived rather than deleted, and `archived: false` restores one. Changes apply to new sessions: existing sessions keep the label and `isBreak` they were created with.
+
+`200`: the category. `400` and `409` as for `POST`. `404` if not found.
 
 ## `GET /api/work/sessions/active`
 
